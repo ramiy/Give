@@ -181,3 +181,6 @@ We also really like WooCommerce. It's hands-down the most robust eCommerce platf
 * Fix: Allow for $0 set donations to be saved properly - https://github.com/WordImpress/Give/issues/529
 * Fix: Transactions with a "cancelled" status are not shown in the wp-admin Transactions table - thanks @pryley - https://github.com/WordImpress/Give/issues/514
 * Fix: Alternative to fopen provided for PDF exports - https://github.com/WordImpress/Give/issues/511
+
+= Earlier versions =
+For the changelog of earlier versions, please refer to the separate changelog.txt file.

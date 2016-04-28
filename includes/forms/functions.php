@@ -462,14 +462,15 @@ function give_record_sale_in_log( $give_form_id = 0, $payment_id, $price_id = fa
  *
  * @since 1.0
  *
- * @param int $give_form_id Give Form ID
+ * @param int $form_id Give Form ID
  *
  * @return bool|int
  */
-function give_increase_purchase_count( $give_form_id = 0 ) {
-	$form = new Give_Donate_Form( $give_form_id );
+function give_increase_purchase_count( $form_id = 0, $quantity = 1 ) {
+	$quantity = (int) $quantity;
+	$form     = new Give_Donate_Form( $form_id );
 
-	return $form->increase_sales();
+	return $form->increase_sales( $quantity );
 }
 
 /**
@@ -481,10 +482,11 @@ function give_increase_purchase_count( $give_form_id = 0 ) {
  *
  * @return bool|int
  */
-function give_decrease_purchase_count( $form_id = 0 ) {
-	$form = new Give_Donate_Form( $form_id );
+function give_decrease_purchase_count( $form_id = 0, $quantity = 1 ) {
+	$quantity = (int) $quantity;
+	$form     = new Give_Donate_Form( $form_id );
 
-	return $form->decrease_sales();
+	return $form->decrease_sales( $quantity );
 }
 
 /**
@@ -703,7 +705,7 @@ function give_get_lowest_price_option( $form_id = 0 ) {
 
 /**
  * Get Lowest Price ID
- * 
+ *
  * @description: Retrieves the ID for the cheapest price option of a variable donation form
  *
  * @since 1.5
@@ -724,7 +726,7 @@ function give_get_lowest_price_id( $form_id = 0 ) {
 
 	$prices = give_get_variable_prices( $form_id );
 
-	$low = 0.00;
+	$low    = 0.00;
 	$min_id = 1;
 
 	if ( ! empty( $prices ) ) {
@@ -750,6 +752,22 @@ function give_get_lowest_price_id( $form_id = 0 ) {
 	return (int) $min_id;
 }
 
+/**
+ * Get donation item price id
+ *
+ * @since 1.0
+ *
+ * @param array $item Payment item array
+ * @return int Price id
+ */
+function give_get_payment_item_price_id( $item = array() ) {
+	if( isset( $item['item_number'] ) ) {
+		$price_id = isset( $item['item_number']['options']['price_id'] ) ? $item['item_number']['options']['price_id'] : null;
+	} else {
+		$price_id = isset( $item['options']['price_id'] ) ? $item['options']['price_id'] : null;
+	}
+	return $price_id;
+}
 /**
  * Retrieves most expensive price option of a variable priced form
  *
@@ -920,6 +938,8 @@ function give_get_price_option_amount( $form_id = 0, $price_id = 0 ) {
 
 	return apply_filters( 'give_get_price_option_amount', give_sanitize_amount( $amount ), $form_id, $price_id );
 }
+
+
 
 /**
  * Returns the goal of a form

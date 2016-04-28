@@ -472,6 +472,21 @@ function give_email_tag_date( $payment_id ) {
 }
 
 /**
+ * Email template tag: subtotal
+ * Price of purchase before taxes
+ *
+ * @param int $payment_id
+ *
+ * @return string subtotal
+ */
+function give_email_tag_subtotal( $payment_id ) {
+	$payment  = new Give_Payment( $payment_id );
+	$subtotal = give_currency_filter( give_format_amount( $payment->subtotal ), $payment->currency );
+
+	return html_entity_decode( $subtotal, ENT_COMPAT, 'UTF-8' );
+}
+
+/**
  * Email template tag: price
  * The total price of the donation
  *
@@ -523,10 +538,33 @@ function give_email_tag_receipt_id( $payment_id ) {
  * @return string $form_title
  */
 function give_email_tag_donation( $payment_id ) {
-	$payment    = new Give_Payment( $payment_id );
-	$form_title = get_the_title( $payment->form_id );
+	
+	$payment = new Give_Payment( $payment_id );
+	
+	$payment_details = $payment->payment_details;
+	$donation_list   = '';
 
-	return ! empty( $form_title ) ? $form_title : __( 'There was an error retrieving this donation title', 'give' );
+	if ( $payment_details ) {
+		$show_names = apply_filters( 'give_email_show_names', true );
+
+		foreach ( $payment_details as $item ) {
+
+			$price_id = give_get_payment_item_price_id( $item );
+			if ( $show_names ) {
+
+				$title = get_the_title( $item['id'] );
+
+				if ( $price_id !== null ) {
+					$title .= ' - ' . give_get_price_option_name( $item['id'], $price_id, $payment_id );
+				}
+
+				$donation_list .= apply_filters( 'give_email_receipt_donation_title', $title, $item, $price_id, $payment_id ) . "\n";
+			}
+
+		}
+	}
+
+	return $donation_list;
 
 }
 
@@ -540,6 +578,7 @@ function give_email_tag_donation( $payment_id ) {
  */
 function give_email_tag_payment_method( $payment_id ) {
 	$payment = new Give_Payment( $payment_id );
+
 	return give_get_gateway_checkout_label( $payment->gateway );
 }
 

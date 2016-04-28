@@ -258,7 +258,7 @@ final class Give_Payment {
 	 * @since  1.5
 	 * @var array
 	 */
-	protected $donation_details = array();
+	protected $payment_details = array();
 
 	/**
 	 * Array of items that have changed since the last save() was run
@@ -412,9 +412,9 @@ final class Give_Payment {
 		$this->status_nicename = array_key_exists( $this->status, $all_payment_statuses ) ? $all_payment_statuses[ $this->status ] : ucfirst( $this->status );
 
 		// Items
-		$this->fees             = $this->setup_fees();
-		$this->donation_details = $this->setup_donation_details();
-		$this->donations        = $this->setup_donations();
+		$this->fees            = $this->setup_fees();
+		$this->payment_details = $this->setup_payment_details();
+		$this->donations       = $this->setup_donations();
 
 		// Currency Based
 		$this->total      = $this->setup_total();
@@ -480,22 +480,22 @@ final class Give_Payment {
 		}
 
 		$payment_data = array(
-			'price'            => $this->total,
-			'date'             => $this->date,
-			'user_email'       => $this->email,
-			'purchase_key'     => $this->key,
-			'currency'         => $this->currency,
-			'donations'        => $this->donations,
-			'user_info'        => array(
+			'price'           => $this->total,
+			'date'            => $this->date,
+			'user_email'      => $this->email,
+			'purchase_key'    => $this->key,
+			'currency'        => $this->currency,
+			'donations'       => $this->donations,
+			'user_info'       => array(
 				'id'         => $this->user_id,
 				'email'      => $this->email,
 				'first_name' => $this->first_name,
 				'last_name'  => $this->last_name,
 				'address'    => $this->address,
 			),
-			'donation_details' => $this->donation_details,
-			'status'           => $this->status,
-			'fees'             => $this->fees,
+			'payment_details' => $this->payment_details,
+			'status'          => $this->status,
+			'fees'            => $this->fees,
 		);
 
 		$args = apply_filters( 'give_insert_payment_args', array(
@@ -605,7 +605,7 @@ final class Give_Payment {
 
 										// Add sales logs
 										$log_date = date_i18n( 'Y-m-d G:i:s', current_time( 'timestamp' ) );
-										$price_id = isset( $item['item_number']['options']['price_id'] ) ? $item['item_number']['options']['price_id'] : 0;
+										$price_id = isset( $item['options']['price_id'] ) ? $item['options']['price_id'] : 0;
 
 										$y = 0;
 										while ( $y < $item['quantity'] ) {
@@ -793,11 +793,11 @@ final class Give_Payment {
 			$this->update_meta( '_give_payment_total', $this->total );
 
 			$new_meta = array(
-				'donations'        => $this->donations,
-				'donation_details' => $this->donation_details,
-				'fees'             => $this->fees,
-				'currency'         => $this->currency,
-				'user_info'        => $this->user_info,
+				'donations'       => $this->donations,
+				'payment_details' => $this->payment_details,
+				'fees'            => $this->fees,
+				'currency'        => $this->currency,
+				'user_info'       => $this->user_info,
 			);
 
 			$meta        = $this->get_meta();
@@ -898,28 +898,22 @@ final class Give_Payment {
 			$total = 0;
 		}
 
-		// Silly item_number array
-		$item_number = array(
-			'id'       => $donation->ID,
-			'quantity' => 1,
-			'options'  => $options,
+		$this->payment_details[] = array(
+			'name'       => $donation->post_title,
+			'id'         => $donation->ID,
+			'quantity'   => 1,
+			'options'    => $options,
+			'item_price' => round( $item_price, give_currency_decimal_filter() ),
+			'subtotal'   => round( $subtotal, give_currency_decimal_filter() ),
+			'fees'       => $args['fees'],
+			'price'      => round( $total, give_currency_decimal_filter() ),
 		);
 
-		$this->donation_details[] = array(
-			'name'        => $donation->post_title,
-			'id'          => $donation->ID,
-			'item_number' => $item_number,
-			'item_price'  => round( $item_price, give_currency_decimal_filter() ),
-			'subtotal'    => round( $subtotal, give_currency_decimal_filter() ),
-			'fees'        => $args['fees'],
-			'price'       => round( $total, give_currency_decimal_filter() ),
-		);
-
-		$added_donation           = end( $this->donation_details );
+		$added_donation           = end( $this->payment_details );
 		$added_donation['action'] = 'add';
 
 		$this->pending['donations'][] = $added_donation;
-		reset( $this->donation_details );
+		reset( $this->payment_details );
 
 		$this->increase_subtotal( $subtotal );
 
@@ -970,7 +964,7 @@ final class Give_Payment {
 			} elseif ( false !== $args['donation_index'] ) {
 
 				$donation_index = absint( $args['donation_index'] );
-				$donation_item  = ! empty( $this->donation_details[ $donation_index ] ) ? $this->donation_details[ $donation_index ] : false;
+				$donation_item  = ! empty( $this->payment_details[ $donation_index ] ) ? $this->payment_details[ $donation_index ] : false;
 
 				if ( ! empty( $donation_item ) ) {
 
@@ -980,7 +974,7 @@ final class Give_Payment {
 					}
 
 					// If this item has a price ID, make sure it matches the cart indexed item's price ID before removing
-					if ( isset( $item['options']['price_id'] ) && $item['options']['price_id'] != $donation_item['item_number']['options']['price_id'] ) {
+					if ( isset( $item['options']['price_id'] ) && $item['options']['price_id'] != $donation_item['options']['price_id'] ) {
 						continue;
 					}
 
@@ -1007,14 +1001,14 @@ final class Give_Payment {
 
 		if ( false === $args['donation_index'] ) {
 
-			foreach ( $this->donation_details as $donation_key => $item ) {
+			foreach ( $this->payment_details as $donation_key => $item ) {
 
 				if ( $donation_id != $item['id'] ) {
 					continue;
 				}
 
 				if ( false !== $args['price_id'] ) {
-					if ( isset( $item['item_number']['options']['price_id'] ) && $args['price_id'] != $item['item_number']['options']['price_id'] ) {
+					if ( isset( $item['options']['price_id'] ) && $args['price_id'] != $item['options']['price_id'] ) {
 						continue;
 					}
 				}
@@ -1033,38 +1027,38 @@ final class Give_Payment {
 
 			$donation_index = absint( $args['donation_index'] );
 
-			if ( ! array_key_exists( $donation_index, $this->donation_details ) ) {
+			if ( ! array_key_exists( $donation_index, $this->payment_details ) ) {
 				return false; // Invalid cart index passed.
 			}
 
-			if ( $this->donation_details[ $donation_index ]['id'] !== $donation_id ) {
+			if ( $this->payment_details[ $donation_index ]['id'] !== $donation_id ) {
 				return false; // We still need the proper Download ID to be sure.
 			}
 
 			$found_donation_key = $donation_index;
 		}
 
-		$orig_quantity = $this->donation_details[ $found_donation_key ]['quantity'];
+		$orig_quantity = $this->payment_details[ $found_donation_key ]['quantity'];
 
 		if ( $orig_quantity > $args['quantity'] ) {
 
-			$this->donation_details[ $found_donation_key ]['quantity'] -= $args['quantity'];
+			$this->payment_details[ $found_donation_key ]['quantity'] -= $args['quantity'];
 
-			$item_price = $this->donation_details[ $found_donation_key ]['item_price'];
+			$item_price = $this->payment_details[ $found_donation_key ]['item_price'];
 
 			// The total reduction equals the number removed * the item_price
 			$total_reduced = round( $item_price * $args['quantity'], give_currency_decimal_filter() );
 
-			$new_quantity = $this->donation_details[ $found_donation_key ]['quantity'];
+			$new_quantity = $this->payment_details[ $found_donation_key ]['quantity'];
 			$new_subtotal = $new_quantity * $item_price;
 
-			$this->donation_details[ $found_donation_key ]['subtotal'] = $new_subtotal;
-			$this->donation_details[ $found_donation_key ]['price']    = $new_subtotal;
+			$this->payment_details[ $found_donation_key ]['subtotal'] = $new_subtotal;
+			$this->payment_details[ $found_donation_key ]['price']    = $new_subtotal;
 
 		} else {
 
-			$total_reduced = $this->donation_details[ $found_donation_key ]['item_price'];
-			unset( $this->donation_details[ $found_donation_key ] );
+			$total_reduced = $this->payment_details[ $found_donation_key ]['item_price'];
+			unset( $this->payment_details[ $found_donation_key ] );
 
 		}
 
@@ -1713,12 +1707,12 @@ final class Give_Payment {
 	private function setup_subtotal() {
 
 		//@TODO: Add fees to sub
-		$subtotal         = 0;
-		$donation_details = $this->donation_details;
+		$subtotal        = 0;
+		$payment_details = $this->payment_details;
 
-		if ( is_array( $donation_details ) ) {
+		if ( is_array( $payment_details ) ) {
 
-			foreach ( $donation_details as $item ) {
+			foreach ( $payment_details as $item ) {
 
 				if ( isset( $item['subtotal'] ) ) {
 
@@ -1968,10 +1962,10 @@ final class Give_Payment {
 	 * @since  1.5
 	 * @return array The donation details
 	 */
-	private function setup_donation_details() {
-		$donation_details = isset( $this->payment_meta['donation_details'] ) ? maybe_unserialize( $this->payment_meta['donation_details'] ) : array();
+	private function setup_payment_details() {
+		$payment_details = isset( $this->payment_meta['payment_details'] ) ? maybe_unserialize( $this->payment_meta['payment_details'] ) : array();
 
-		return $donation_details;
+		return $payment_details;
 	}
 
 	/**
@@ -2001,8 +1995,8 @@ final class Give_Payment {
 	 * @since  2.5.1
 	 * @return array Cart details array
 	 */
-	private function get_donation_details() {
-		return apply_filters( 'edd_payment_donation_details', $this->donation_details, $this->ID, $this );
+	private function get_payment_details() {
+		return apply_filters( 'edd_payment_payment_details', $this->payment_details, $this->ID, $this );
 	}
 
 	/**

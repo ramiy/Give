@@ -42,38 +42,50 @@ function give_complete_purchase( $payment_id, $new_status, $old_status ) {
 
 	$payment = new Give_Payment( $payment_id );
 
-	$creation_date = get_post_field( 'post_date', $payment_id, 'raw' );
-
-	$payment_meta   = $payment->payment_meta;
-	$completed_date = $payment->completed_date;
-	$user_info      = $payment->user_info;
-	$customer_id    = $payment->customer_id;
-	$amount         = $payment->total;
-	$price_id       = $payment->price_id;
-	$form_id        = $payment->form_id;
+	$creation_date    = get_post_field( 'post_date', $payment_id, 'raw' );
+	$payment_meta     = $payment->payment_meta;
+	$completed_date   = $payment->completed_date;
+	$user_info        = $payment->user_info;
+	$customer_id      = $payment->customer_id;
+	$amount           = $payment->total;
+	$payment_details = $payment->payment_details;
 
 	do_action( 'give_pre_complete_purchase', $payment_id );
 
-	// Ensure these actions only run once, ever
-	if ( empty( $completed_date ) ) {
+	if ( is_array( $payment_details ) ) {
 
-		if ( ! give_is_test_mode() || apply_filters( 'give_log_test_payment_stats', false ) ) {
+		// Increase purchase count and earnings
+		foreach ( $payment_details as $donation_index => $donation ) {
 
-			give_record_sale_in_log( $form_id, $payment_id, $price_id, $creation_date );
-			give_increase_purchase_count( $form_id );
-			give_increase_earnings( $form_id, $amount );
+			$price_id = isset( $donation['item_number']['options']['price_id'] ) ? (int) $donation['item_number']['options']['price_id'] : false;
+
+			$quantity = isset( $donation['quantity'] ) ? $donation['quantity'] : 1;
+
+			// Increase earnings and fire actions once per quantity number
+			for ( $i = 0; $i < $quantity; $i ++ ) {
+
+				// Ensure these actions only run once, ever
+				if ( empty( $completed_date ) ) {
+
+					give_record_sale_in_log( $donation['id'], $payment_id, $price_id, $creation_date );
+					do_action( 'give_complete_donation_purchase', $donation['id'], $payment_id, $donation, $donation_index );
+
+				}
+
+			}
+
+			// Increase the earnings for this download ID
+			give_increase_earnings( $donation['id'], $donation['price'] );
+			give_increase_purchase_count( $donation['id'], $quantity );
 
 		}
 
-		do_action( 'give_complete_form_donation', $form_id, $payment_id, $payment_meta );
+		// Clear the total earnings cache
+		delete_transient( 'give_earnings_total' );
+		// Clear the This Month earnings (this_monththis_month is NOT a typo)
+		delete_transient( md5( 'give_earnings_this_monththis_month' ) );
+		delete_transient( md5( 'give_earnings_todaytoday' ) );
 	}
-
-
-	// Clear the total earnings cache
-	delete_transient( 'give_earnings_total' );
-	// Clear the This Month earnings (this_monththis_month is NOT a typo)
-	delete_transient( md5( 'give_earnings_this_monththis_month' ) );
-	delete_transient( md5( 'give_earnings_todaytoday' ) );
 
 
 	// Increase the donor's purchase stats
