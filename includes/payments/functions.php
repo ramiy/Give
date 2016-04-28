@@ -293,7 +293,9 @@ function give_delete_purchase( $payment_id = 0, $update_customer = true ) {
 }
 
 /**
- * Undoes a donation, including the decrease of donations and earning stats. Used for when refunding or deleting a donation
+ * Undo Purchase
+ *
+ * @description: Undoes a donation, including the decrease of donations and earning stats. Used for when refunding or deleting a donation
  *
  * @since 1.0
  *
@@ -922,7 +924,14 @@ function give_get_payment_meta_user_info( $payment_id ) {
 function give_get_payment_form_id( $payment_id ) {
 	$payment = new Give_Payment( $payment_id );
 
-	return $payment->donations[0]['id'];
+	if ( isset( $payment->donations[0]['id'] ) && ! empty( $payment->donations[0]['id'] ) ) {
+		return $payment->donations[0]['id'];
+	} elseif ( isset( $payment->payment_meta['form_id'] ) ) {
+		return $payment->payment_meta['form_id'];
+	} else {
+		return false;
+	}
+
 }
 
 /**
