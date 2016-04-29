@@ -20,7 +20,48 @@ class Give_Helper_Payment extends WP_UnitTestCase {
 		give_delete_purchase( $payment_id );
 
 	}
+	
+	/**
+	 * Create a simple donation form.
+	 *
+	 * @since 2.3
+	 */
+	public static function create_simple_donation_form() {
 
+		$post_id = wp_insert_post( array(
+			'post_title'    => 'Test Donation Form',
+			'post_name'     => 'test-donation-form',
+			'post_type'     => 'give_forms',
+			'post_status'   => 'publish'
+		) );
+		
+		$meta = array(
+			'give_price'               => '20.00',
+			'_give_price_option'       => 'set',
+			'_give_form_earnings'            => 40,
+			'_give_form_sales'               => 2,
+			
+			'edd_price'                         => '20.00',
+			'_variable_pricing'                 => 0,
+			'edd_variable_prices'               => false,
+			'edd_download_files'                => array_values( $_download_files ),
+			'_edd_download_limit'               => 20,
+			'_edd_hide_purchase_link'           => 1,
+			'edd_product_notes'                 => 'Purchase Notes',
+			'_edd_product_type'                 => 'default',
+			'_edd_download_earnings'            => 40,
+			'_edd_download_sales'               => 2,
+			'_edd_download_limit_override_1'    => 1,
+			'edd_sku'                           => 'sku_0012'
+		);
+
+		foreach( $meta as $key => $value ) {
+			update_post_meta( $post_id, $key, $value );
+		}
+
+		return get_post( $post_id );
+
+	}
 	/**
 	 * Create a simple donation payment.
 	 *

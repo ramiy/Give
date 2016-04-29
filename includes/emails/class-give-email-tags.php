@@ -538,9 +538,9 @@ function give_email_tag_receipt_id( $payment_id ) {
  * @return string $form_title
  */
 function give_email_tag_donation( $payment_id ) {
-	
+
 	$payment = new Give_Payment( $payment_id );
-	
+
 	$payment_details = $payment->payment_details;
 	$donation_list   = '';
 
@@ -558,7 +558,7 @@ function give_email_tag_donation( $payment_id ) {
 					$title .= ' - ' . give_get_price_option_name( $item['id'], $price_id, $payment_id );
 				}
 
-				$donation_list .= apply_filters( 'give_email_receipt_donation_title', $title, $item, $price_id, $payment_id ) . "\n";
+				$donation_list .= apply_filters( 'give_email_receipt_donation_title', $title, $item, $price_id, $payment_id );
 			}
 
 		}
