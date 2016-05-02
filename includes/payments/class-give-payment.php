@@ -480,7 +480,6 @@ final class Give_Payment {
 		}
 
 		$payment_data = array(
-			'price'           => $this->total,
 			'date'            => $this->date,
 			'user_email'      => $this->email,
 			'purchase_key'    => $this->key,
@@ -1996,7 +1995,7 @@ final class Give_Payment {
 	 * @return array Cart details array
 	 */
 	private function get_payment_details() {
-		return apply_filters( 'edd_payment_payment_details', $this->payment_details, $this->ID, $this );
+		return apply_filters( 'give_payment_payment_details', $this->payment_details, $this->ID, $this );
 	}
 
 	/**
