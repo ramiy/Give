@@ -834,7 +834,7 @@ Content Options
 .cmb2-id--give-content-option,
 .cmb2-id--give-terms-option,
 .cmb2-id--give-offline-donation-enable-billing-fields-single,
-.cmb2-id--give-goal-option,
+.cmb2-id--give-dedication-option,
 .cmb2-id--give-customize-offline-donations {
   border-bottom: none !important;
   margin: 0 !important; }
@@ -842,7 +842,7 @@ Content Options
 .cmb2-id--give-form-content,
 .cmb2-id--give-agree-label,
 .cmb2-id--give-offline-checkout-notes,
-.cmb2-id--give-set-goal,
+.cmb2-id--give-dedication-text,
 .cmb2-id--give-offline-donation-enable-billing-fields-single {
   border-top: 1px solid #e9e9e9 !important; }
 

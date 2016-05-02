@@ -183,8 +183,8 @@ function give_single_forms_cmb2_metaboxes( array $meta_boxes ) {
 				),
 				//Goals
 				array(
-					'name'        => __( 'Set Goal?', 'give' ),
-					'description' => __( 'Do you want to set a donation goal for this form?', 'give' ),
+					'name'        => __( 'Goal', 'give' ),
+					'description' => __( 'Would you like to set a donation goal for this form?', 'give' ),
 					'id'          => $prefix . 'goal_option',
 					'type'        => 'radio_inline',
 					'default'     => 'no',
@@ -227,6 +227,29 @@ function give_single_forms_cmb2_metaboxes( array $meta_boxes ) {
 					'row_classes' => 'give-subfield',
 					'default'     => '#2bc253',
 				),
+				//Dedication
+				array(
+					'name'        => __( 'Dedication', 'give' ),
+					'description' => __( 'Would you like an optional "In honor/memory of" dedication field displayed on the donation form?', 'give' ),
+					'id'          => $prefix . 'dedication_option',
+					'type'        => 'radio_inline',
+					'default'     => 'no',
+					'options'     => array(
+						'yes' => __( 'Yes', 'give' ),
+						'no'  => __( 'No', 'give' ),
+					),
+				),
+				array(
+					'name'        => __( 'Dedication Text', 'give' ),
+					'description' => __( 'This is the text that will display next to the checkbox indicating that the donation is made in dedication.', 'give' ),
+					'id'          => $prefix . 'dedication_text',
+					'type'        => 'text',
+					'row_classes' => 'give-subfield',
+					'attributes'  => array(
+						'placeholder' => __( 'Dedicate this gift to a friend or loved one.', 'give' ),
+					),
+				),
+
 			)
 		)
 	) );
@@ -420,6 +443,7 @@ function give_cmb_render_levels_repeater_header() {
 
 	<?php
 }
+
 add_action( 'cmb2_render_levels_repeater_header', 'give_cmb_render_levels_repeater_header', 10 );
 
 
@@ -428,9 +452,9 @@ add_action( 'cmb2_render_levels_repeater_header', 'give_cmb_render_levels_repeat
  * CMB2 Repeatable ID Field
  *
  * @description: Custom CMB2 incremental Levels ID Field
- * 
+ *
  * @since      1.0
- * 
+ *
  * @param $field_object
  * @param $escaped_value
  * @param $object_id
@@ -454,6 +478,7 @@ function give_cmb_render_levels_id( $field_object, $escaped_value, $object_id, $
 	echo $field_type_object->input( $field_options_array );
 
 }
+
 add_action( 'cmb2_render_levels_id', 'give_cmb_render_levels_id', 10, 5 );
 
 

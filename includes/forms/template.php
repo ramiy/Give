@@ -1404,3 +1404,61 @@ function give_members_only_form( $final_output, $args ) {
 }
 
 add_filter( 'give_donate_form', 'give_members_only_form', 10, 2 );
+
+
+/**
+ * Give Dedication Fields
+ *
+ * @description: Displays an "In honor/memory of" field on the donation form
+ *
+ * @since 1.5
+ *
+ * @param $form_id
+ * @param $args
+ */
+function give_dedication_fields( $form_id, $args ) {
+
+	$dedication_option = get_post_meta( $form_id, '_give_dedication_option', true );
+
+	//Sanity check
+	if ( $dedication_option !== 'yes' ) {
+		return;
+	}
+
+	$dedication_checkbox_text = get_post_meta( $form_id, '_give_dedication_text', true );
+	$dedication_type          = apply_filters( 'give_dedication_options', array(
+		'honor'  => 'In Honor of',
+		'memory' => 'In Memory of'
+	) );
+
+	ob_start();
+	?>
+
+	<div id="give-dedication-wrap-<?php echo $form_id; ?>">
+		<div class="give-dedication-option-wrap">
+			<input id="give-dedication-option-<?php echo $form_id; ?>" type="checkbox" value="">
+			<label for="give-dedication-option-<?php echo $form_id; ?>"><?php echo( ! empty( $dedication_checkbox_text ) ? $dedication_checkbox_text : __( 'Dedicate this gift to a friend or loved one.', 'give' ) ); ?></label>
+		</div>
+		<div class="give-dedication-fields-wrap give-clearfix">
+			<div class="give-dedication-type form-row form-row-first">
+				<label for="give-dedication-type-<?php echo $form_id; ?>" class="give-label"><?php _e( 'Dedication' ) ?></label>
+				<select name="dedication_type" id="give-dedication-type-<?php echo $form_id; ?>" class="give-select">
+					<?php foreach ( $dedication_type as $dedication_option => $dedication ) {
+						echo '<option value="' . $dedication_option . '">' . $dedication . '</option>';
+					} ?>
+				</select>
+			</div>
+			<div class="give-dedication-name form-row form-row-last">
+				<label for="give-dedication-type-<?php echo $form_id; ?>" class="give-label"><?php _e( 'Name', 'give' ); ?></label>
+				<input class="give-input" type="text" name="give_dedication_name" id="give-dedication-type-<?php echo $form_id; ?>" placeholder="Name">
+			</div>
+		</div>
+
+	</div>
+
+	<?php
+	echo apply_filters( 'give_dedication_fields_output', ob_get_clean() );
+
+}
+
+add_action( 'give_after_donation_levels', 'give_dedication_fields', 10, 2 );

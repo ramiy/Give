@@ -25,6 +25,7 @@ Layout
     padding: 0;
     margin: 0;
     border: 0;
+    clear: both;
   }
 
   .give-form-title {
@@ -710,6 +711,17 @@ Basic Button Style
     background: #dbdbdb;
   }
 
+}
+
+/*---------------------------------
+Dedication
+-----------------------------------*/
+
+[id*='give-form'] {
+  .give-dedication-fields-wrap {
+    display: none;
+    margin: 15px 0 0;
+  }
 }
 
 /*---------------------------------
