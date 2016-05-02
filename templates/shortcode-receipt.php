@@ -20,6 +20,7 @@ $donation = $meta['form_title'];
 $user     = give_get_payment_meta_user_info( $payment->ID );
 $email    = give_get_payment_user_email( $payment->ID );
 $status   = give_get_payment_status( $payment, true );
+
 ?>
 
 <?php do_action( 'give_payment_receipt_before_table', $payment, $give_receipt_args ); ?>
