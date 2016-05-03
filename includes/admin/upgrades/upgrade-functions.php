@@ -63,7 +63,7 @@ function give_show_upgrade_notices() {
 	}
 
 	//v1.4 Upgrades
-	if ( version_compare( $give_version, '1.4', '<' ) || ! give_has_upgrade_completed( 'upgrade_give_payments_v14' )) {
+	if ( version_compare( $give_version, '1.4', '<' ) || ! give_has_upgrade_completed( 'upgrade_give_payments_v14' ) ) {
 		printf(
 			'<div class="updated"><p>' . esc_html__( 'Give needs to upgrade the database, click %shere%s to start the upgrade.', 'give' ) . '</p></div>',
 			'<a href="' . esc_url( admin_url( 'options.php?page=give-upgrades&give-upgrade=upgrade_transaction_payments' ) ) . '">',
@@ -288,69 +288,102 @@ function give_v14_upgrade_transaction_payments() {
 		@set_time_limit( 0 );
 	}
 
-	$step   = isset( $_GET['step'] ) ? absint( $_GET['step'] ) : 1;
-	$number = 50;
-	$offset = $step == 1 ? 0 : ( $step - 1 ) * $number;
+	$step  = isset( $_GET['step'] ) ? absint( $_GET['step'] ) : 1;
+	$total = isset( $_GET['total'] ) ? absint( $_GET['total'] ) : false;
 
-	// Check if we have any payments before moving on
-	if ( $step < 2 ) {
-		
-		$sql          = "SELECT ID FROM $wpdb->posts WHERE post_type = 'give_payment' LIMIT 1";
-		$has_payments = $wpdb->get_col( $sql );
-
-		if ( empty( $has_payments ) ) {
-			// We have no payments, just complete
-			update_option( 'give_version', preg_replace( '/[^0-9.].*/', '', GIVE_VERSION ) );
-			give_set_upgrade_complete( 'upgrade_give_payments_v14' );
-			delete_option( 'give_doing_upgrade' );
-			wp_redirect( admin_url() );
-			exit;
-		}
-	}
-
-	$step   = isset( $_GET['step'] )  ? absint( $_GET['step'] )  : 1;
-	$total  = isset( $_GET['total'] ) ? absint( $_GET['total'] ) : false;
-
-	if( empty( $total ) || $total <= 1 ) {
+	if ( empty( $total ) || $total <= 1 ) {
 		$payments = give_count_payments();
-		foreach( $payments as $status ) {
+		foreach ( $payments as $status ) {
 			$total += $status;
 		}
 	}
-	
-	$args   = array(
-		'number' => 100,
+
+	$args = array(
+		'number' => 100, //@TODO: make this 100 after testing
 		'page'   => $step,
 		'status' => 'any',
 		'order'  => 'ASC'
 	);
-	
+
 	$payments = new Give_Payments_Query( $args );
 	$payments = $payments->get_payments();
+echo '<pre>';
+var_dump($payments);
+echo '</pre>';
+	
+	if ( $payments ) {
 
-	if( $payments ) {
+		foreach ( $payments as $payment ) {
+
+			//Check if this payment has proper `payment_details` set
+			if ( empty( $payment->payment_details ) ) {
+
+				$form_id    = isset( $payment->payment_meta['form_id'] ) ? $payment->payment_meta['form_id'] : give_get_payment_form_id( $payment->ID );
+				$form_title = isset( $payment->payment_meta['form_title'] ) ? $payment->payment_meta['form_title'] : get_the_title( $form_id );
+				$price_id =   isset( $payment->payment_meta['price_id'] ) ? (int) $payment->payment_meta['price_id'] : 0;
+
+				//Empty array detected: Update Payment Details 
+				$payment->payment_details = array(
+					0 => array(
+						'name'       => $form_title,
+						'id'         => $form_id,
+						'quantity'   => 1,
+						'options'    => array(
+							'price_id' => $price_id
+						),
+						'item_price' => round( $payment->total, give_currency_decimal_filter() ),
+						'sub_total'  => round( $payment->total, give_currency_decimal_filter() ),
+						'fees'       => array(),
+						'price'      => round( $payment->total, give_currency_decimal_filter() ),
+
+					)
+				);
+
+				$payment->donations = array(
+					0 => array(
+						'id'      => $form_id,
+						'options' => array(
+							'price_id' => $price_id
+						),
+					)
+				);
+
+				//Merge Meta Data
+				$new_meta    = array(
+					'donations'       => $payment->donations,
+					'payment_details' => $payment->payment_details,
+				);
+
+				$meta        = give_get_payment_meta( $payment->ID );
+				$merged_meta = array_merge( $meta, $new_meta );
+echo '<pre>';
+var_dump($payment);
+echo '</pre>';
+//				give_update_payment_meta( $payment->ID, '_give_payment_meta', $merged_meta );
+			}
+
+		}
 
 		// More Payments found so upgrade them
 		$step ++;
 		$redirect = add_query_arg( array(
-			'page'        => 'give-upgrades',
+			'page'         => 'give-upgrades',
 			'give-upgrade' => 'give_upgrade_transaction_payments',
-			'step'        => $step,
-			'number'      => $number,
-			'total'       => $total
+			'step'         => $step,
+			'total'        => $total
 		), admin_url( 'index.php' ) );
 		wp_redirect( $redirect );
 		exit;
-		
+
 	} else {
 
 		// No more customers found, finish up
 
-		update_option( 'give_version', preg_replace( '/[^0-9.].*/', '', GIVE_VERSION ) );
-		give_set_upgrade_complete( 'upgrade_give_payments_v14' );
-		delete_option( 'give_doing_upgrade' );
-
-		wp_redirect( admin_url() );
+//		update_option( 'give_version', preg_replace( '/[^0-9.].*/', '', GIVE_VERSION ) );
+//		give_set_upgrade_complete( 'upgrade_give_payments_v14' );
+//		delete_option( 'give_doing_upgrade' );
+//
+//		wp_redirect( admin_url() );
 		exit;
 	}
 }

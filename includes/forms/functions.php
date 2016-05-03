@@ -758,16 +758,19 @@ function give_get_lowest_price_id( $form_id = 0 ) {
  * @since 1.0
  *
  * @param array $item Payment item array
+ *
  * @return int Price id
  */
 function give_get_payment_item_price_id( $item = array() ) {
-	if( isset( $item['item_number'] ) ) {
+	if ( isset( $item['item_number'] ) ) {
 		$price_id = isset( $item['item_number']['options']['price_id'] ) ? $item['item_number']['options']['price_id'] : null;
 	} else {
 		$price_id = isset( $item['options']['price_id'] ) ? $item['options']['price_id'] : null;
 	}
+
 	return $price_id;
 }
+
 /**
  * Retrieves most expensive price option of a variable priced form
  *
@@ -938,7 +941,6 @@ function give_get_price_option_amount( $form_id = 0, $price_id = 0 ) {
 
 	return apply_filters( 'give_get_price_option_amount', give_sanitize_amount( $amount ), $form_id, $price_id );
 }
-
 
 
 /**
