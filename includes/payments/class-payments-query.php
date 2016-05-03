@@ -117,7 +117,6 @@ class Give_Payments_Query extends Give_Stats {
 
 		add_action( 'give_pre_get_payments', array( $this, 'date_filter_pre' ) );
 		add_action( 'give_post_get_payments', array( $this, 'date_filter_post' ) );
-
 		add_action( 'give_pre_get_payments', array( $this, 'orderby' ) );
 		add_action( 'give_pre_get_payments', array( $this, 'status' ) );
 		add_action( 'give_pre_get_payments', array( $this, 'month' ) );

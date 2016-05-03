@@ -1962,6 +1962,7 @@ final class Give_Payment {
 	 * @return array The donation details
 	 */
 	private function setup_payment_details() {
+
 		$payment_details = isset( $this->payment_meta['payment_details'] ) ? maybe_unserialize( $this->payment_meta['payment_details'] ) : array();
 
 		return $payment_details;
