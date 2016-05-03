@@ -62,6 +62,15 @@ function give_show_upgrade_notices() {
 		);
 	}
 
+	//v1.4 Upgrades
+	if ( version_compare( $give_version, '1.4', '<' ) || ! give_has_upgrade_completed( 'upgrade_give_payments_v14' )) {
+		printf(
+			'<div class="updated"><p>' . esc_html__( 'Give needs to upgrade the database, click %shere%s to start the upgrade.', 'give' ) . '</p></div>',
+			'<a href="' . esc_url( admin_url( 'options.php?page=give-upgrades&give-upgrade=upgrade_transaction_payments' ) ) . '">',
+			'</a>'
+		);
+	}
+
 
 	// End 'Stepped' upgrade process notices
 
@@ -258,3 +267,92 @@ function give_v134_upgrade_give_offline_status() {
 }
 
 add_action( 'give_upgrade_give_offline_status', 'give_v134_upgrade_give_offline_status' );
+
+
+/**
+ * Run the upgrade payments to new data structure
+ *
+ * @since  1.4
+ * @return void
+ */
+function give_v14_upgrade_transaction_payments() {
+	global $wpdb;
+
+	if ( ! current_user_can( 'manage_give_settings' ) ) {
+		wp_die( __( 'You do not have permission to do shop upgrades', 'give' ), __( 'Error', 'give' ), array( 'response' => 403 ) );
+	}
+
+	ignore_user_abort( true );
+
+	if ( ! give_is_func_disabled( 'set_time_limit' ) && ! ini_get( 'safe_mode' ) ) {
+		@set_time_limit( 0 );
+	}
+
+	$step   = isset( $_GET['step'] ) ? absint( $_GET['step'] ) : 1;
+	$number = 50;
+	$offset = $step == 1 ? 0 : ( $step - 1 ) * $number;
+
+	// Check if we have any payments before moving on
+	if ( $step < 2 ) {
+		
+		$sql          = "SELECT ID FROM $wpdb->posts WHERE post_type = 'give_payment' LIMIT 1";
+		$has_payments = $wpdb->get_col( $sql );
+
+		if ( empty( $has_payments ) ) {
+			// We have no payments, just complete
+			update_option( 'give_version', preg_replace( '/[^0-9.].*/', '', GIVE_VERSION ) );
+			give_set_upgrade_complete( 'upgrade_give_payments_v14' );
+			delete_option( 'give_doing_upgrade' );
+			wp_redirect( admin_url() );
+			exit;
+		}
+	}
+
+	$step   = isset( $_GET['step'] )  ? absint( $_GET['step'] )  : 1;
+	$total  = isset( $_GET['total'] ) ? absint( $_GET['total'] ) : false;
+
+	if( empty( $total ) || $total <= 1 ) {
+		$payments = give_count_payments();
+		foreach( $payments as $status ) {
+			$total += $status;
+		}
+	}
+	
+	$args   = array(
+		'number' => 100,
+		'page'   => $step,
+		'status' => 'any',
+		'order'  => 'ASC'
+	);
+	
+	$payments = new Give_Payments_Query( $args );
+	$payments = $payments->get_payments();
+
+	if( $payments ) {
+
+		// More Payments found so upgrade them
+		$step ++;
+		$redirect = add_query_arg( array(
+			'page'        => 'give-upgrades',
+			'give-upgrade' => 'give_upgrade_transaction_payments',
+			'step'        => $step,
+			'number'      => $number,
+			'total'       => $total
+		), admin_url( 'index.php' ) );
+		wp_redirect( $redirect );
+		exit;
+		
+	} else {
+
+		// No more customers found, finish up
+
+		update_option( 'give_version', preg_replace( '/[^0-9.].*/', '', GIVE_VERSION ) );
+		give_set_upgrade_complete( 'upgrade_give_payments_v14' );
+		delete_option( 'give_doing_upgrade' );
+
+		wp_redirect( admin_url() );
+		exit;
+	}
+}
+
+add_action( 'give_upgrade_transaction_payments', 'give_v14_upgrade_transaction_payments' );
