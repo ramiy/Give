@@ -3,7 +3,7 @@
  * Give DB base class
  *
  * @package     Give
- * @subpackage  Classes/Give DB
+ * @subpackage  Classes/Give_DB
  * @copyright   Copyright (c) 2016, WordImpress
  * @license     http://opensource.org/licenses/gpl-2.0.php GNU Public License
  * @since       1.0
@@ -104,6 +104,7 @@ abstract class Give_DB {
 	 * @return  string
 	 */
 	public function get_column( $column, $row_id ) {
+
 		global $wpdb;
 
 		return $wpdb->get_var( "SELECT $column FROM $this->table_name WHERE $this->primary_key = $row_id LIMIT 1;" );

@@ -330,7 +330,7 @@ final class Give_Payment {
 	 * @param mixed $value The value of the property
 	 */
 	public function __set( $key, $value ) {
-		$ignore = array( 'fees', '_ID' );
+		$ignore = array( 'donations', 'payment_details', 'fees', '_ID' );
 
 		if ( $key === 'status' ) {
 			$this->old_status = $this->status;
@@ -480,6 +480,7 @@ final class Give_Payment {
 		}
 
 		$payment_data = array(
+			'price'           => $this->total,
 			'date'            => $this->date,
 			'user_email'      => $this->email,
 			'purchase_key'    => $this->key,
@@ -791,6 +792,8 @@ final class Give_Payment {
 
 			$this->update_meta( '_give_payment_total', $this->total );
 
+			$this->donations = array_values( $this->donations );
+
 			$new_meta = array(
 				'donations'       => $this->donations,
 				'payment_details' => $this->payment_details,
@@ -934,10 +937,10 @@ final class Give_Payment {
 
 		// Set some defaults
 		$defaults = array(
-			'quantity'       => 1,
-			'item_price'     => false,
-			'price_id'       => false,
-			'donation_index' => false,
+			'quantity'      => 1,
+			'item_price'    => false,
+			'price_id'      => false,
+			'payment_index' => false,
 		);
 		$args     = wp_parse_args( $args, $defaults );
 
@@ -960,10 +963,10 @@ final class Give_Payment {
 					continue;
 				}
 
-			} elseif ( false !== $args['donation_index'] ) {
+			} elseif ( false !== $args['payment_index'] ) {
 
-				$donation_index = absint( $args['donation_index'] );
-				$donation_item  = ! empty( $this->payment_details[ $donation_index ] ) ? $this->payment_details[ $donation_index ] : false;
+				$payment_index = absint( $args['payment_index'] );
+				$donation_item = ! empty( $this->payment_details[ $payment_index ] ) ? $this->payment_details[ $payment_index ] : false;
 
 				if ( ! empty( $donation_item ) ) {
 
@@ -998,7 +1001,7 @@ final class Give_Payment {
 
 		$found_donation_key = false;
 
-		if ( false === $args['donation_index'] ) {
+		if ( false === $args['payment_index'] ) {
 
 			foreach ( $this->payment_details as $donation_key => $item ) {
 
@@ -1024,17 +1027,17 @@ final class Give_Payment {
 
 		} else {
 
-			$donation_index = absint( $args['donation_index'] );
+			$payment_index = absint( $args['payment_index'] );
 
-			if ( ! array_key_exists( $donation_index, $this->payment_details ) ) {
+			if ( ! array_key_exists( $payment_index, $this->payment_details ) ) {
 				return false; // Invalid cart index passed.
 			}
 
-			if ( $this->payment_details[ $donation_index ]['id'] !== $donation_id ) {
+			if ( $this->payment_details[ $payment_index ]['id'] !== $donation_id ) {
 				return false; // We still need the proper Download ID to be sure.
 			}
 
-			$found_donation_key = $donation_index;
+			$found_donation_key = $payment_index;
 		}
 
 		$orig_quantity = $this->payment_details[ $found_donation_key ]['quantity'];
@@ -1476,7 +1479,9 @@ final class Give_Payment {
 	}
 
 	/**
-	 * When a payment is set to a status of 'refunded' process the necessary actions to reduce stats
+	 * Process Refund
+	 *
+	 * @description: When a payment is set to a status of 'refunded' process the necessary actions to reduce stats
 	 *
 	 * @since  1.5
 	 * @access private
@@ -1526,7 +1531,9 @@ final class Give_Payment {
 	}
 
 	/**
-	 * Process when a payment moves to pending
+	 * Process Pending
+	 *
+	 * @description: Process when a payment moves to pending
 	 *
 	 * @since  1.5
 	 * @return void
@@ -1831,6 +1838,10 @@ final class Give_Payment {
 		$email = $this->get_meta( '_give_payment_user_email', true );
 
 		if ( empty( $email ) ) {
+//			echo '<pre>';
+//			var_dump($this);
+//			echo '</pre>';
+//			die();
 			$email = Give()->customers->get_column( 'email', $this->customer_id );
 		}
 

@@ -484,7 +484,6 @@ class Give_Payments_Query extends Give_Stats {
 		global $give_logs;
 
 		$args = array(
-			//			'post_id'                => $this->args['give_forms'],
 			'log_type'               => 'sale',
 			'post_status'            => array( 'publish' ),
 			'nopaging'               => true,

@@ -307,8 +307,7 @@ function give_delete_purchase( $payment_id = 0, $update_customer = true ) {
 function give_undo_purchase( $form_id = false, $payment_id ) {
 
 	if ( ! empty( $form_id ) ) {
-		$form_id = false;
-		_give_deprected_argument( 'form_id', 'give_undo_purchase', '1.5' );
+		_give_deprecated_function( 'form_id', 'give_undo_purchase', '1.5' );
 	}
 
 	$payment = new Give_Payment( $payment_id );
