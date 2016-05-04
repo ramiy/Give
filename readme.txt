@@ -140,6 +140,9 @@ We also really like WooCommerce. It's hands-down the most robust eCommerce platf
 
 == Changelog ==
 
+= 1.5:  =
+* New: When a donor creates an account via the donation form both the admin and donor get notification emails sent using the Give email templates
+
 = 1.4.3:  =
 * Fix: Update the email address of a customer record when the email of a user is updated via the WordPress profile updater - https://github.com/WordImpress/Give/issues/607
 * Fix: Bug if the donation form's custom amount minimum is set to 0.00 the warning message would still display - https://github.com/WordImpress/Give/issues/604

@@ -133,17 +133,27 @@ function give_get_users_completed_donations( $user = 0, $status = 'complete' ) {
 		return false;
 	}
 
-	// Grab only the post ids "form_id" of the forms purchased on this order
+	// Grab only the post ids of the forms for this donation
 	$completed_donations_ids = array();
 	foreach ( $donation_data as $purchase_meta ) {
-		$completed_donations_ids[] = $purchase_meta['form_id'];
+		$completed_donations_ids[] = @wp_list_pluck( $purchase_meta, 'id' );
 	}
+
+	// Ensure that grabbed forms actually HAVE donations
+	$purchase_product_ids = array_filter( $completed_donations_ids );
+
 	if ( empty( $completed_donations_ids ) ) {
 		return false;
 	}
 
-	// Only include each product purchased once
-	$form_ids = array_unique( $completed_donations_ids );
+	// Merge all donations into a single array of all items purchased
+	$completed_donations = array();
+	foreach ( $completed_donations_ids as $donation ) {
+		$completed_donations = array_merge( $donation, $completed_donations );
+	}
+
+	// Only include each donations given once
+	$form_ids = array_unique( $completed_donations );
 
 	// Make sure we still have some products and a first item
 	if ( empty ( $form_ids ) || ! isset( $form_ids[0] ) ) {
@@ -161,11 +171,65 @@ function give_get_users_completed_donations( $user = 0, $status = 'complete' ) {
 	return apply_filters( 'give_users_completed_donations_list', get_posts( $args ) );
 }
 
+/**
+ * Has User Purchased
+ *
+ * Checks to see if a user has given to a donation form.
+ *
+ * @access      public
+ * @since       1.5
+ *
+ * @param       int $user_id - the ID of the user to check
+ * @param       array $donations - Array of IDs to check if purchased. If an int is passed, it will be converted to an array
+ * @param       int $variable_price_id - the variable price ID to check for
+ *
+ * @return      boolean - true if has purchased, false otherwise
+ */
+function give_has_user_purchased( $user_id, $donations, $variable_price_id = null ) {
+
+	if ( empty( $user_id ) ) {
+		return false;
+	}
+
+	$users_purchases = give_get_users_purchases( $user_id );
+
+	$return = false;
+
+	if ( ! is_array( $donations ) ) {
+		$donations = array( $donations );
+	}
+
+	if ( $users_purchases ) {
+		foreach ( $users_purchases as $purchase ) {
+			$payment             = new Give_Payment( $purchase->ID );
+			$completed_donations = $payment->payment_details;
+
+			if ( is_array( $completed_donations ) ) {
+				foreach ( $completed_donations as $donation ) {
+					if ( in_array( $donation['id'], $donations ) ) {
+						$variable_prices = give_has_variable_prices( $donation['id'] );
+						if ( $variable_prices && ! is_null( $variable_price_id ) && $variable_price_id !== false ) {
+							if ( isset( $donation['item_number']['options']['price_id'] ) && $variable_price_id == $donation['item_number']['options']['price_id'] ) {
+								return true;
+							} else {
+								$return = false;
+							}
+						} else {
+							$return = true;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return $return;
+}
 
 /**
  * Has Purchases
  *
- * Checks to see if a user has donated to at least one form.
+ * Checks to see if a user has given to at least one form.
  *
  * @access      public
  * @since       1.0
@@ -251,8 +315,7 @@ function give_count_purchases_of_customer( $user = null ) {
 	if ( empty( $user ) && Give()->email_access->token_email ) {
 		$user = Give()->email_access->token_email;
 	}
-
-
+	
 	$stats = ! empty( $user ) ? give_get_purchase_stats_by_user( $user ) : false;
 
 	return isset( $stats['purchases'] ) ? $stats['purchases'] : 0;
@@ -293,6 +356,24 @@ function give_validate_username( $username ) {
 	return (bool) apply_filters( 'give_validate_username', $valid, $username );
 }
 
+/**
+ * Attach the newly created user_id to a customer, if one exists
+ *
+ * @since  1.5
+ * @param  int $user_id The User ID that was created
+ * @return void
+ */
+function give_connect_existing_customer_to_new_user( $user_id ) {
+	$email = get_the_author_meta( 'user_email', $user_id );
+
+	// Update the user ID on the customer
+	$customer = new Give_Customer( $email );
+
+	if( $customer->id > 0 ) {
+		$customer->update( array( 'user_id' => $user_id ) );
+	}
+}
+add_action( 'user_register', 'give_connect_existing_customer_to_new_user', 10, 1 );
 
 /**
  * Looks up purchases by email that match the registering user
@@ -406,20 +487,33 @@ function give_new_user_notification( $user_id = 0, $user_data = array() ) {
 	if ( empty( $user_id ) || empty( $user_data ) ) {
 		return;
 	}
-	$blogname = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
-	$message  = sprintf( esc_attr__( 'New user registration on your site %s:' ), $blogname ) . "\r\n\r\n";
-	$message .= sprintf( esc_attr__( 'Username: %s' ), $user_data['user_login'] ) . "\r\n\r\n";
-	$message .= sprintf( esc_attr__( 'E-mail: %s' ), $user_data['user_email'] ) . "\r\n";
+	
+	$emails     = new Give_Emails();
+	$from_name  = give_get_option( 'from_name', wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) );
+	$from_email = give_get_option( 'from_email', get_bloginfo( 'admin_email' ) );
+	
+	$emails->__set( 'from_name', $from_name );
+	$emails->__set( 'from_email', $from_email );
+	
+	//Admin Notification Email
+	$admin_subject  = sprintf( __('[%s] New User Registration', 'give' ), $from_name );
+	$admin_heading  = __( 'New user registration', 'give' );
+	$admin_message  = sprintf( __( 'Username: %s', 'give'), $user_data['user_login'] ) . "\r\n\r\n";
+	$admin_message .= sprintf( __( 'E-mail: %s', 'give'), $user_data['user_email'] ) . "\r\n";
 
-	@wp_mail( get_option( 'admin_email' ), sprintf( esc_attr__( '[%s] New User Registration' ), $blogname ), $message );
+	$emails->__set( 'heading', $admin_heading );
+	$emails->send( get_option( 'admin_email' ), $admin_subject, $admin_message );
 
-	$message = sprintf( esc_attr__( 'Username: %s' ), $user_data['user_login'] ) . "\r\n";
-	$message .= sprintf( esc_attr__( 'Password: %s' ), esc_attr__( '[Password entered during donation]', 'give' ) ) . "\r\n";
+	//Email to New User
+	$user_subject  = sprintf( __( '[%s] Your username and password', 'give' ), $from_name );
+	$user_heading  = __( 'Your account info', 'give' );
+	$user_message  = sprintf( __( 'Username: %s', 'give' ), $user_data['user_login'] ) . "\r\n";
+	$user_message .= sprintf( __( 'Password: %s' ), __( '[Password entered at checkout]', 'give' ) ) . "\r\n";
+	$user_message .= '<a href="' . wp_login_url() . '"> ' . esc_attr__( 'Click Here to Log In', 'give' ) . ' &raquo;</a>' . "\r\n";
 
-	$message .= '<a href="' . wp_login_url() . '"> ' . esc_attr__( 'Click Here to Login', 'give' ) . ' &raquo;</a>' . "\r\n";
-
-	wp_mail( $user_data['user_email'], sprintf( esc_attr__( '[%s] Your username and password' ), $blogname ), $message );
-
+	$emails->__set( 'heading', $user_heading );
+	$emails->send( $user_data['user_email'], $user_subject, $user_message );
+	
 }
 
 add_action( 'give_insert_user', 'give_new_user_notification', 10, 2 );
