@@ -12,7 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 } // Exit if accessed directly
 
-
+/**
+ * Class Give_DB
+ */
 abstract class Give_DB {
 
 	/**
@@ -80,7 +82,7 @@ abstract class Give_DB {
 	public function get( $row_id ) {
 		global $wpdb;
 
-		return $wpdb->get_row( "SELECT * FROM $this->table_name WHERE $this->primary_key = $row_id LIMIT 1;" );
+		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $this->table_name WHERE $this->primary_key = %s LIMIT 1;", $row_id ) );
 	}
 
 	/**
@@ -92,8 +94,8 @@ abstract class Give_DB {
 	 */
 	public function get_by( $column, $row_id ) {
 		global $wpdb;
-
-		return $wpdb->get_row( "SELECT * FROM $this->table_name WHERE $column = '$row_id' LIMIT 1;" );
+		$column = esc_sql( $column );
+		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $this->table_name WHERE $column = %s LIMIT 1;", $row_id ) );
 	}
 
 	/**
@@ -104,10 +106,9 @@ abstract class Give_DB {
 	 * @return  string
 	 */
 	public function get_column( $column, $row_id ) {
-
 		global $wpdb;
-
-		return $wpdb->get_var( "SELECT $column FROM $this->table_name WHERE $this->primary_key = $row_id LIMIT 1;" );
+		$column = esc_sql( $column );
+		return $wpdb->get_var( $wpdb->prepare( "SELECT $column FROM $this->table_name WHERE $this->primary_key = %s LIMIT 1;", $row_id ) );
 	}
 
 	/**
@@ -119,8 +120,9 @@ abstract class Give_DB {
 	 */
 	public function get_column_by( $column, $column_where, $column_value ) {
 		global $wpdb;
-
-		return $wpdb->get_var( "SELECT $column FROM $this->table_name WHERE $column_where = '$column_value' LIMIT 1;" );
+		$column_where = esc_sql( $column_where );
+		$column       = esc_sql( $column );
+		return $wpdb->get_var( $wpdb->prepare( "SELECT $column FROM $this->table_name WHERE $column_where = %s LIMIT 1;", $column_value ) );
 	}
 
 	/**
