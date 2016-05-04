@@ -59,3 +59,29 @@ function give_undo_donation_on_refund( $payment_id, $new_status, $old_status ) {
 	$payment->refund();
 
 }
+
+/**
+ * Get the donations Key from Payment Meta
+ *
+ * @description Retrieves the form_id from a payment
+ * @since       1.0
+ *
+ * @param int $payment_id Payment ID
+ *
+ * @return int $form_id
+ */
+function give_get_payment_form_id( $payment_id ) {
+	$payment = new Give_Payment( $payment_id );
+
+	$backtrace = debug_backtrace();
+	_give_deprecated_function( 'give_get_payment_form_id', '1.5', 'give_get_payment_meta_donations', $backtrace );
+
+	if ( isset( $payment->donations[0]['id'] ) && ! empty( $payment->donations[0]['id'] ) ) {
+		return $payment->donations[0]['id'];
+	} elseif ( isset( $payment->payment_meta['form_id'] ) ) {
+		return $payment->payment_meta['form_id'];
+	} else {
+		return false;
+	}
+
+}
