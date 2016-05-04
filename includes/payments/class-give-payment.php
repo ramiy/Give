@@ -1837,7 +1837,7 @@ final class Give_Payment {
 	private function setup_email() {
 		$email = $this->get_meta( '_give_payment_user_email', true );
 
-		if ( empty( $email ) && isset( $this->customer_id ) ) {
+		if ( empty( $email ) ) {
 			$email = Give()->customers->get_column( 'email', $this->customer_id );
 		}
 
