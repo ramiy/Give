@@ -128,11 +128,8 @@ function give_insert_payment( $payment_data = array() ) {
 	}
 
 	$payment = new Give_Payment();
-	echo '<pre>';
-	var_dump( $payment_data );
-	echo '</pre>';
-	//As of Give version 1.5 Support for multiple donations per payment
-	if ( isset( $payment_data['payment_details'] ) && is_array( $payment_data['payment_details'] ) && ! empty( $payment_data['payment_details'] ) ) {
+
+	if ( is_array( $payment_data['payment_details'] ) && ! empty( $payment_data['payment_details'] ) ) {
 
 		foreach ( $payment_data['payment_details'] as $item ) {
 
@@ -148,26 +145,12 @@ function give_insert_payment( $payment_data = array() ) {
 			$payment->add_donation( $item['id'], $args, $options );
 		}
 
-	} else {
-
-		//Legacy support for singular donations per payment
-		$args = array(
-			'quantity'   => 1,
-			'price_id'   => give_get_price_id( $payment_data['give_form_id'], $payment_data['price'] ),
-			'item_price' => isset( $payment_data['price'] ) ? $payment_data['price'] : 0,
-			'fees'       => array(),
-		);
-
-		$payment->add_donation( $payment_data['give_form_id'], $args );
-
 	}
 
 	$gateway = ! empty( $payment_data['gateway'] ) ? $payment_data['gateway'] : '';
 	$gateway = empty( $gateway ) && isset( $_POST['give-gateway'] ) ? $_POST['give-gateway'] : $gateway;
 
 	$payment->status         = ! empty( $payment_data['status'] ) ? $payment_data['status'] : 'pending';
-	$payment->total          = isset( $payment_data['price'] ) ? $payment_data['price'] : 0;
-	$payment->fees           = isset( $payment_data['fees'] ) ? $payment_data['fees'] : 0;
 	$payment->currency       = ! empty( $payment_data['currency'] ) ? $payment_data['currency'] : give_get_currency();
 	$payment->user_info      = $payment_data['user_info'];
 	$payment->gateway        = $gateway;
@@ -248,7 +231,8 @@ function give_delete_purchase( $payment_id = 0, $update_customer = true ) {
 	$amount      = give_get_payment_amount( $payment_id );
 	$status      = $payment->post_status;
 	$customer_id = give_get_payment_customer_id( $payment_id );
-	$customer    = new Give_Customer( $customer_id );
+
+	$customer = new Give_Customer( $customer_id );
 
 	if ( $status == 'revoked' || $status == 'publish' ) {
 		// Only decrease earnings if they haven't already been decreased (or were never increased for this payment)
@@ -312,19 +296,41 @@ function give_undo_purchase( $form_id = false, $payment_id ) {
 
 	$payment = new Give_Payment( $payment_id );
 
+	$payment_details = $payment->payment_details;
 
-	$maybe_decrease_earnings = apply_filters( 'give_decrease_earnings_on_undo', true, $payment, $payment->form_id );
-	if ( true === $maybe_decrease_earnings ) {
-		// decrease earnings
-		give_decrease_earnings( $payment->form_id, $payment->total );
+	if ( is_array( $payment_details ) ) {
+
+		foreach ( $payment_details as $item ) {
+
+			// get the item's price
+			$amount = isset( $item['price'] ) ? $item['price'] : false;
+
+			// Decrease earnings/sales and fire action once per quantity number
+			for ( $i = 0; $i < $item['quantity']; $i ++ ) {
+
+				// variable priced downloads
+				if ( false === $amount && give_has_variable_prices( $item['id'] ) ) {
+					$price_id = isset( $item['item_number']['options']['price_id'] ) ? $item['item_number']['options']['price_id'] : null;
+					$amount   = ! isset( $item['price'] ) && 0 !== $item['price'] ? give_get_price_option_amount( $item['id'], $price_id ) : $item['price'];
+				}
+
+			}
+
+			$maybe_decrease_earnings = apply_filters( 'give_decrease_earnings_on_undo', true, $payment, $item['id'] );
+			if ( true === $maybe_decrease_earnings ) {
+				// decrease earnings
+				give_decrease_earnings( $item['id'], $amount );
+			}
+
+			$maybe_decrease_sales = apply_filters( 'give_decrease_sales_on_undo', true, $payment, $item['id'] );
+			if ( true === $maybe_decrease_sales ) {
+				// decrease purchase count
+				give_decrease_purchase_count( $item['id'], $item['quantity'] );
+			}
+
+		}
+
 	}
-
-	$maybe_decrease_sales = apply_filters( 'give_decrease_sales_on_undo', true, $payment, $payment->form_id );
-	if ( true === $maybe_decrease_sales ) {
-		// decrease purchase count
-		give_decrease_purchase_count( $payment->form_id );
-	}
-
 }
 
 
@@ -348,6 +354,7 @@ function give_count_payments( $args = array() ) {
 		's'          => null,
 		'start-date' => null,
 		'end-date'   => null,
+		'give_form'  => null,
 	);
 
 	$args = wp_parse_args( $args, $defaults );
@@ -421,6 +428,12 @@ function give_count_payments( $args = array() ) {
 
 			$where .= $wpdb->prepare( "AND ((p.post_title LIKE %s) OR (p.post_content LIKE %s))", $search, $search );
 		}
+
+	}
+
+	if ( ! empty( $args['give_form'] ) && is_numeric( $args['give_form'] ) ) {
+
+		$where .= $wpdb->prepare( " AND p.post_parent = %d", $args['give_form'] );
 
 	}
 
@@ -522,7 +535,6 @@ function give_count_payments( $args = array() ) {
 function give_check_for_existing_payment( $payment_id ) {
 	$exists  = false;
 	$payment = new Give_Payment( $payment_id );
-
 
 	if ( $payment_id === $payment->ID && 'publish' === $payment->status ) {
 		$exists = true;
@@ -911,26 +923,18 @@ function give_get_payment_meta_user_info( $payment_id ) {
 }
 
 /**
- * Get the donations Key from Payment Meta
+ * Get the downloads Key from Payment Meta
  *
- * @description Retrieves the form_id from a payment payment
- * @since       1.0
+ * @since 1.5
  *
  * @param int $payment_id Payment ID
  *
- * @return int $form_id
+ * @return array $downloads Downloads Meta Values
  */
-function give_get_payment_form_id( $payment_id ) {
+function give_get_payment_meta_donations( $payment_id ) {
 	$payment = new Give_Payment( $payment_id );
 
-	if ( isset( $payment->donations[0]['id'] ) && ! empty( $payment->donations[0]['id'] ) ) {
-		return $payment->donations[0]['id'];
-	} elseif ( isset( $payment->payment_meta['form_id'] ) ) {
-		return $payment->payment_meta['form_id'];
-	} else {
-		return false;
-	}
-
+	return $payment->donations;
 }
 
 /**
@@ -961,7 +965,7 @@ function give_get_payment_meta_purchase_details( $payment_id ) {
 
 	}
 
-	return apply_filters( 'edd_payment_meta_payment_details', $payment_details, $payment_id );
+	return apply_filters( 'give_payment_meta_payment_details', $payment_details, $payment_id );
 }
 
 /**
@@ -1293,6 +1297,41 @@ function give_get_payment_amount( $payment_id ) {
 }
 
 /**
+ * Retrieves subtotal for payment (this is the amount before taxes) and then
+ * returns a full formatted amount. This function essentially calls
+ * give_get_payment_subtotal()
+ *
+ * @since 1.5
+ *
+ * @param int $payment_id Payment ID
+ *
+ * @see give_get_payment_subtotal()
+ *
+ * @return array Fully formatted payment subtotal
+ */
+function give_payment_subtotal( $payment_id = 0 ) {
+	$subtotal = give_get_payment_subtotal( $payment_id );
+
+	return give_currency_filter( give_format_amount( $subtotal ), give_get_payment_currency_code( $payment_id ) );
+}
+
+/**
+ * Retrieves subtotal for payment (this is the amount before taxes) and then
+ * returns a non formatted amount.
+ *
+ * @since 1.5
+ *
+ * @param int $payment_id Payment ID
+ *
+ * @return float $subtotal Subtotal for payment (non formatted)
+ */
+function give_get_payment_subtotal( $payment_id = 0 ) {
+	$payment = new Give_Payment( $payment_id );
+
+	return $payment->subtotal;
+}
+
+/**
  * Retrieves arbitrary fees for the payment
  *
  * @since 1.5
@@ -1558,7 +1597,7 @@ add_action( 'pre_get_comments', 'give_hide_payment_notes', 10 );
  * @return array $clauses Updated comment clauses
  */
 function give_hide_payment_notes_pre_41( $clauses, $wp_comment_query ) {
-	global $wpdb, $wp_version;
+	global $wp_version;
 
 	if ( version_compare( floatval( $wp_version ), '4.1', '<' ) ) {
 		$clauses['where'] .= ' AND comment_type != "give_payment_note"';

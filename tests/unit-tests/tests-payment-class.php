@@ -13,7 +13,7 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 	public function setUp() {
 
 		parent::setUp();
-
+		
 		$payment_id         = Give_Helper_Payment::create_simple_payment();
 		$purchase_data      = give_get_payment_meta( $payment_id );
 		$this->_payment_key = give_get_payment_key( $payment_id );
@@ -40,6 +40,7 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 	}
 
 	public function test_IDs() {
+
 		$payment = new Give_Payment( $this->_payment_id );
 		$this->assertEquals( $this->_payment_id, $payment->ID );
 		$this->assertEquals( $payment->_ID, $payment->ID );
