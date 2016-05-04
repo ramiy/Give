@@ -100,7 +100,7 @@ class Give_Stats {
 	 * @since  1.0
 	 *
 	 * @param string $_start_date
-	 * @param bool   $_end_date
+	 * @param bool $_end_date
 	 *
 	 * @return void
 	 */
@@ -130,9 +130,9 @@ class Give_Stats {
 	public function convert_date( $date, $end_date = false ) {
 
 		$timestamp = false;
-		$second    = 0;
-		$minute    = 0;
-		$hour      = 0;
+		$second    = $end_date ? 59 : 0;
+		$minute    = $end_date ? 59 : 0;
+		$hour      = $end_date ? 23 : 0;
 		$day       = 1;
 		$month     = date( 'n', current_time( 'timestamp' ) );
 		$year      = date( 'Y', current_time( 'timestamp' ) );
@@ -146,7 +146,10 @@ class Give_Stats {
 
 					if ( $end_date ) {
 
-						$day = cal_days_in_month( CAL_GREGORIAN, $month, $year );
+						$day    = cal_days_in_month( CAL_GREGORIAN, $month, $year );
+						$hour   = 23;
+						$minute = 59;
+						$second = 59;
 
 					}
 
@@ -176,7 +179,7 @@ class Give_Stats {
 					$day = date( 'd', current_time( 'timestamp' ) );
 
 					if ( $end_date ) {
-						$hour   = 11;
+						$hour   = 23;
 						$minute = 59;
 						$second = 59;
 					}
@@ -285,7 +288,7 @@ class Give_Stats {
 						} else {
 							$month  = 3;
 							$day    = cal_days_in_month( CAL_GREGORIAN, $month, $year );
-							$hour   = 11;
+							$hour   = 23;
 							$minute = 59;
 							$second = 59;
 						}
@@ -297,7 +300,7 @@ class Give_Stats {
 						} else {
 							$month  = 6;
 							$day    = cal_days_in_month( CAL_GREGORIAN, $month, $year );
-							$hour   = 11;
+							$hour   = 23;
 							$minute = 59;
 							$second = 59;
 						}
@@ -309,7 +312,7 @@ class Give_Stats {
 						} else {
 							$month  = 9;
 							$day    = cal_days_in_month( CAL_GREGORIAN, $month, $year );
-							$hour   = 11;
+							$hour   = 23;
 							$minute = 59;
 							$second = 59;
 						}
@@ -321,7 +324,7 @@ class Give_Stats {
 						} else {
 							$month  = 12;
 							$day    = cal_days_in_month( CAL_GREGORIAN, $month, $year );
-							$hour   = 11;
+							$hour   = 23;
 							$minute = 59;
 							$second = 59;
 						}
@@ -342,7 +345,7 @@ class Give_Stats {
 							$year -= 1;
 							$month  = 12;
 							$day    = cal_days_in_month( CAL_GREGORIAN, $month, $year );
-							$hour   = 11;
+							$hour   = 23;
 							$minute = 59;
 							$second = 59;
 						}
@@ -354,7 +357,7 @@ class Give_Stats {
 						} else {
 							$month  = 3;
 							$day    = cal_days_in_month( CAL_GREGORIAN, $month, $year );
-							$hour   = 11;
+							$hour   = 23;
 							$minute = 59;
 							$second = 59;
 						}
@@ -366,7 +369,7 @@ class Give_Stats {
 						} else {
 							$month  = 6;
 							$day    = cal_days_in_month( CAL_GREGORIAN, $month, $year );
-							$hour   = 11;
+							$hour   = 23;
 							$minute = 59;
 							$second = 59;
 						}
@@ -378,7 +381,7 @@ class Give_Stats {
 						} else {
 							$month  = 9;
 							$day    = cal_days_in_month( CAL_GREGORIAN, $month, $year );
-							$hour   = 11;
+							$hour   = 23;
 							$minute = 59;
 							$second = 59;
 						}
@@ -394,7 +397,7 @@ class Give_Stats {
 					} else {
 						$month  = 12;
 						$day    = cal_days_in_month( CAL_GREGORIAN, $month, $year );
-						$hour   = 11;
+						$hour   = 23;
 						$minute = 59;
 						$second = 59;
 					}
@@ -409,7 +412,7 @@ class Give_Stats {
 					} else {
 						$month  = 12;
 						$day    = cal_days_in_month( CAL_GREGORIAN, $month, $year );
-						$hour   = 11;
+						$hour   = 23;
 						$minute = 59;
 						$second = 59;
 					}
@@ -426,8 +429,10 @@ class Give_Stats {
 
 		} else if ( false !== strtotime( $date ) ) {
 
-			$this->timestamp = true;
-			$date            = strtotime( $date, current_time( 'timestamp' ) );
+			$date  = strtotime( $date, current_time( 'timestamp' ) );
+			$year  = date( 'Y', $date );
+			$month = date( 'm', $date );
+			$day   = date( 'd', $date );
 
 		} else {
 
@@ -436,7 +441,6 @@ class Give_Stats {
 		}
 
 		if ( ! is_wp_error( $date ) && ! $this->timestamp ) {
-
 			// Create an exact timestamp
 			$date = mktime( $hour, $minute, $second, $month, $day, $year );
 
@@ -506,7 +510,7 @@ class Give_Stats {
 		$start_where = '';
 		$end_where   = '';
 
-		if ( $this->start_date ) {
+		if( ! is_wp_error( $this->start_date ) ) {
 
 			if ( $this->timestamp ) {
 				$format = 'Y-m-d H:i:s';
@@ -518,10 +522,10 @@ class Give_Stats {
 			$start_where = " AND $wpdb->posts.post_date >= '{$start_date}'";
 		}
 
-		if ( $this->end_date ) {
+		if( ! is_wp_error( $this->end_date ) ) {
 
 			if ( $this->timestamp ) {
-				$format = 'Y-m-d H:i:s';
+				$format = 'Y-m-d 00:00:00';
 			} else {
 				$format = 'Y-m-d 23:59:59';
 			}

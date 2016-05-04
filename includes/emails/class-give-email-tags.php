@@ -27,6 +27,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class Give_Email_Template_Tags
+ */
 class Give_Email_Template_Tags {
 
 	/**
@@ -356,11 +359,14 @@ add_action( 'give_add_email_tags', 'give_setup_email_tags' );
  * @return string name
  */
 function give_email_tag_first_name( $payment_id ) {
-	$payment_data = give_get_payment_meta( $payment_id );
-	if ( empty( $payment_data['user_info'] ) ) {
+	$payment   = new Give_Payment( $payment_id );
+	$user_info = $payment->user_info;
+
+	if ( empty( $user_info ) ) {
 		return '';
 	}
-	$email_name = give_get_email_names( $payment_data['user_info'] );
+
+	$email_name = give_get_email_names( $user_info );
 
 	return $email_name['name'];
 }
@@ -374,11 +380,14 @@ function give_email_tag_first_name( $payment_id ) {
  * @return string fullname
  */
 function give_email_tag_fullname( $payment_id ) {
-	$payment_data = give_get_payment_meta( $payment_id );
-	if ( empty( $payment_data['user_info'] ) ) {
+	$payment   = new Give_Payment( $payment_id );
+	$user_info = $payment->user_info;
+
+	if ( empty( $user_info ) ) {
 		return '';
 	}
-	$email_name = give_get_email_names( $payment_data['user_info'] );
+
+	$email_name = give_get_email_names( $user_info );
 
 	return $email_name['fullname'];
 }
@@ -392,11 +401,14 @@ function give_email_tag_fullname( $payment_id ) {
  * @return string username
  */
 function give_email_tag_username( $payment_id ) {
-	$payment_data = give_get_payment_meta( $payment_id );
-	if ( empty( $payment_data['user_info'] ) ) {
+	$payment   = new Give_Payment( $payment_id );
+	$user_info = $payment->user_info;
+
+	if ( empty( $user_info ) ) {
 		return '';
 	}
-	$email_name = give_get_email_names( $payment_data['user_info'] );
+
+	$email_name = give_get_email_names( $user_info );
 
 	return $email_name['username'];
 }
@@ -410,7 +422,9 @@ function give_email_tag_username( $payment_id ) {
  * @return string user_email
  */
 function give_email_tag_user_email( $payment_id ) {
-	return give_get_payment_user_email( $payment_id );
+	$payment = new Give_Payment( $payment_id );
+
+	return $payment->email;
 }
 
 /**
@@ -452,9 +466,24 @@ function give_email_tag_billing_address( $payment_id ) {
  * @return string date
  */
 function give_email_tag_date( $payment_id ) {
-	$payment_data = give_get_payment_meta( $payment_id );
+	$payment = new Give_Payment( $payment_id );
 
-	return date_i18n( get_option( 'date_format' ), strtotime( $payment_data['date'] ) );
+	return date_i18n( get_option( 'date_format' ), strtotime( $payment->date ) );
+}
+
+/**
+ * Email template tag: subtotal
+ * Price of purchase before taxes
+ *
+ * @param int $payment_id
+ *
+ * @return string subtotal
+ */
+function give_email_tag_subtotal( $payment_id ) {
+	$payment  = new Give_Payment( $payment_id );
+	$subtotal = give_currency_filter( give_format_amount( $payment->subtotal ), $payment->currency );
+
+	return html_entity_decode( $subtotal, ENT_COMPAT, 'UTF-8' );
 }
 
 /**
@@ -466,7 +495,8 @@ function give_email_tag_date( $payment_id ) {
  * @return string price
  */
 function give_email_tag_price( $payment_id ) {
-	$price = give_currency_filter( give_format_amount( give_get_payment_amount( $payment_id ) ), give_get_payment_currency_code( $payment_id ) );
+	$payment = new Give_Payment( $payment_id );
+	$price   = give_currency_filter( give_format_amount( $payment->total ), $payment->currency );
 
 	return html_entity_decode( $price, ENT_COMPAT, 'UTF-8' );
 }
@@ -480,7 +510,9 @@ function give_email_tag_price( $payment_id ) {
  * @return int payment_id
  */
 function give_email_tag_payment_id( $payment_id ) {
-	return give_get_payment_number( $payment_id );
+	$payment = new Give_Payment( $payment_id );
+
+	return $payment->number;
 }
 
 /**
@@ -492,7 +524,9 @@ function give_email_tag_payment_id( $payment_id ) {
  * @return string receipt_id
  */
 function give_email_tag_receipt_id( $payment_id ) {
-	return give_get_payment_key( $payment_id );
+	$payment = new Give_Payment( $payment_id );
+
+	return $payment->key;
 }
 
 /**
@@ -504,10 +538,34 @@ function give_email_tag_receipt_id( $payment_id ) {
  * @return string $form_title
  */
 function give_email_tag_donation( $payment_id ) {
-	$payment_data = give_get_payment_meta( $payment_id );
-	$form_title   = ( ! empty( $payment_data['form_title'] ) ? $payment_data['form_title'] : __( 'There was an error retrieving this donation title', 'give' ) );
 
-	return $form_title;
+	$payment = new Give_Payment( $payment_id );
+
+	$payment_details = $payment->payment_details;
+	$donation_list   = '';
+
+	if ( $payment_details ) {
+		$show_names = apply_filters( 'give_email_show_names', true );
+
+		foreach ( $payment_details as $item ) {
+
+			$price_id = give_get_payment_item_price_id( $item );
+			if ( $show_names ) {
+
+				$title = get_the_title( $item['id'] );
+
+				if ( $price_id !== null ) {
+					$title .= ' - ' . give_get_price_option_name( $item['id'], $price_id, $payment_id );
+				}
+
+				$donation_list .= apply_filters( 'give_email_receipt_donation_title', $title, $item, $price_id, $payment_id );
+			}
+
+		}
+	}
+
+	return $donation_list;
+
 }
 
 /**
@@ -519,7 +577,9 @@ function give_email_tag_donation( $payment_id ) {
  * @return string gateway
  */
 function give_email_tag_payment_method( $payment_id ) {
-	return give_get_gateway_checkout_label( give_get_payment_gateway( $payment_id ) );
+	$payment = new Give_Payment( $payment_id );
+
+	return give_get_gateway_checkout_label( $payment->gateway );
 }
 
 /**

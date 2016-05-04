@@ -141,6 +141,7 @@ We also really like WooCommerce. It's hands-down the most robust eCommerce platf
 == Changelog ==
 
 = 1.4.3:  =
+* Fix: Bug if the donation form's custom amount minimum is set to 0.00 the warning message would still display - https://github.com/WordImpress/Give/issues/604
 * Fix: Bug with email access and the Donation History shortcode pagination not counting properly - https://github.com/WordImpress/Give/issues/600
 * Fix: Fixed incorrect meta_key usage within is_single_price_mode() method which was returning false positives - https://github.com/WordImpress/Give/issues/602
 
@@ -185,3 +186,6 @@ We also really like WooCommerce. It's hands-down the most robust eCommerce platf
 * Fix: Allow for $0 set donations to be saved properly - https://github.com/WordImpress/Give/issues/529
 * Fix: Transactions with a "cancelled" status are not shown in the wp-admin Transactions table - thanks @pryley - https://github.com/WordImpress/Give/issues/514
 * Fix: Alternative to fopen provided for PDF exports - https://github.com/WordImpress/Give/issues/511
+
+= Earlier versions =
+For the changelog of earlier versions, please refer to the separate changelog.txt file.

@@ -15,7 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- *
  * Process the payment details edit
  *
  * @access      private

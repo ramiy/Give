@@ -3,7 +3,7 @@
 /**
  * Class Give_Helper_Payment.
  *
- * Helper class to create and delete a payment easily.
+ * Helper class to create and delete a donation payment easily.
  */
 class Give_Helper_Payment extends WP_UnitTestCase {
 
@@ -20,7 +20,7 @@ class Give_Helper_Payment extends WP_UnitTestCase {
 		give_delete_purchase( $payment_id );
 
 	}
-
+	
 	/**
 	 * Create a simple donation payment.
 	 *

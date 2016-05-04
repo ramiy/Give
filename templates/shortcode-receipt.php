@@ -12,15 +12,15 @@ if ( empty( $payment ) && isset( $give_receipt_args['id'] ) ) {
 //Double-Validation: Check for $payment global
 if ( empty( $payment ) ) {
 	give_output_error( __( 'The specified receipt ID appears to be invalid', 'give' ) );
+
 	return;
 }
 
-$meta     = give_get_payment_meta( $payment->ID );
-$donation = $meta['form_title'];
-$user     = give_get_payment_meta_user_info( $payment->ID );
-$email    = give_get_payment_user_email( $payment->ID );
-$status   = give_get_payment_status( $payment, true );
-
+$meta      = give_get_payment_meta( $payment->ID );
+$donations = give_get_payment_meta_purchase_details( $payment->ID );
+$user      = give_get_payment_meta_user_info( $payment->ID );
+$email     = give_get_payment_user_email( $payment->ID );
+$status    = give_get_payment_status( $payment, true );
 ?>
 
 <?php do_action( 'give_payment_receipt_before_table', $payment, $give_receipt_args ); ?>
@@ -49,10 +49,18 @@ $status   = give_get_payment_status( $payment, true );
 			<td class="give_receipt_payment_status <?php echo strtolower( $status ); ?>"><?php echo $status; ?></td>
 		</tr>
 
-		<tr>
-			<td class="give_receipt_payment_status"><strong><?php _e( 'Donation', 'give' ); ?>:</strong></td>
-			<td class="give_receipt_payment_status"><?php echo $donation; ?></td>
-		</tr>
+		<?php
+		//Donation(s)
+		foreach ( $donations as $key => $donation ) {
+			
+			$price_option = give_get_price_option_name( $donation['id'], $donation['options']['price_id'], $payment->ID );
+			$donation_title = $donation['name'] . ( ! empty( $price_option ) ? ' - ' . $price_option : '' );
+			?>
+			<tr>
+				<td class="give_receipt_payment_status"><strong><?php _e( 'Donation', 'give' ); ?>:</strong></td>
+				<td class="give_receipt_payment_status"><?php echo $donation_title; ?></td>
+			</tr>
+		<?php } ?>
 
 		<?php if ( filter_var( $give_receipt_args['payment_key'], FILTER_VALIDATE_BOOLEAN ) ) : ?>
 			<tr>
