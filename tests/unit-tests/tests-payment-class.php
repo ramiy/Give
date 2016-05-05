@@ -70,17 +70,19 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 	}
 
 	public function test_payment_status_update() {
+
 		$payment = new Give_Payment( $this->_payment_id );
 
 		$payment->update_status( 'pending' );
 		$this->assertEquals( 'pending', $payment->status );
 		$this->assertEquals( 'Pending', $payment->status_nicename );
 
-		// Test backwards compat
+		// Test backwards compatibility
 		give_update_payment_status( $this->_payment_id, 'publish' );
 
 		// Need to get the payment again since it's been updated
 		$payment = new Give_Payment( $this->_payment_id );
+
 		$this->assertEquals( 'publish', $payment->status );
 		$this->assertEquals( 'Complete', $payment->status_nicename );
 	}

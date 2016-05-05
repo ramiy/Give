@@ -51,7 +51,7 @@ function give_get_variable_prices( $form_id = 0 ) {
 	}
 
 	$form = new Give_Donate_Form( $form_id );
-
+	
 	return $form->prices;
 
 }
