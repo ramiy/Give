@@ -198,7 +198,10 @@ function give_insert_payment( $payment_data = array() ) {
  * @param int $payment_id Payment ID
  * @param string $new_status New Payment Status (default: publish)
  *
- * @return void
+ * @param $payment_id
+ * @param string $new_status
+ *
+ * @return bool
  */
 function give_update_payment_status( $payment_id, $new_status = 'publish' ) {
 
