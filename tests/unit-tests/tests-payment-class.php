@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @group give_payments
+ * Class Tests_Payment_Class
  */
 class Tests_Payment_Class extends WP_UnitTestCase {
 
@@ -92,9 +92,9 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$this->assertEquals( 2, count( $payment->donations ) );
 		$this->assertEquals( 120.00, $payment->total );
 
-		$new_download = Give_Helper_Form::create_simple_form();
+		$new_form = Give_Helper_Form::create_simple_form();
 
-		$payment->add_donation( $new_download->ID );
+		$payment->add_donation( $new_form->ID );
 		$payment->save();
 
 		$this->assertEquals( 3, count( $payment->donations ) );
@@ -107,13 +107,13 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$this->assertEquals( 2, count( $payment->donations ) );
 		$this->assertEquals( 120.00, $payment->total );
 
-		$new_download = Give_Helper_Form::create_simple_form();
+		$new_form = Give_Helper_Form::create_simple_form();
 
 		$args = array(
 			'item_price' => 0,
 		);
 
-		$payment->add_donation( $new_download->ID, $args );
+		$payment->add_donation( $new_form->ID, $args );
 		$payment->save();
 
 		$this->assertEquals( 3, count( $payment->donations ) );

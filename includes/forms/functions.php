@@ -621,7 +621,7 @@ function give_get_price_option_name( $form_id = 0, $price_id = 0, $payment_id = 
 
 	$prices     = give_get_variable_prices( $form_id );
 	$price_name = '';
-
+	
 	foreach ( $prices as $price ) {
 
 		if ( intval( $price['_give_id']['level_id'] ) == intval( $price_id ) ) {
@@ -629,7 +629,7 @@ function give_get_price_option_name( $form_id = 0, $price_id = 0, $payment_id = 
 		}
 
 	}
-	
+
 	return apply_filters( 'give_get_price_option_name', $price_name, $form_id, $payment_id, $price_id );
 }
 
