@@ -66,6 +66,33 @@ class Give_Donate_Form {
 	private $earnings;
 
 	/**
+	 * Declare the default properties in WP_Post as we can't extend it
+	 * Anything we've declared above has been removed.
+	 */
+	public $post_author = 0;
+	public $post_date = '0000-00-00 00:00:00';
+	public $post_date_gmt = '0000-00-00 00:00:00';
+	public $post_content = '';
+	public $post_title = '';
+	public $post_excerpt = '';
+	public $post_status = 'publish';
+	public $comment_status = 'open';
+	public $ping_status = 'open';
+	public $post_password = '';
+	public $post_name = '';
+	public $to_ping = '';
+	public $pinged = '';
+	public $post_modified = '0000-00-00 00:00:00';
+	public $post_modified_gmt = '0000-00-00 00:00:00';
+	public $post_content_filtered = '';
+	public $post_parent = 0;
+	public $guid = '';
+	public $menu_order = 0;
+	public $post_mime_type = '';
+	public $comment_count = 0;
+	public $filter;
+
+	/**
 	 * Give_Donate_Form constructor.
 	 *
 	 * @since 1.0
@@ -75,39 +102,49 @@ class Give_Donate_Form {
 	 */
 	public function __construct( $_id = false, $_args = array() ) {
 
-		if ( false === $_id ) {
+		$donation_form = WP_Post::get_instance( $_id );
 
-			$defaults = array(
-				'post_type'   => 'give_forms',
-				'post_status' => 'draft',
-				'post_title'  => __( 'New Give Form', 'give' )
-			);
+		return $this->setup_donation_form( $donation_form );
 
-			$args = wp_parse_args( $_args, $defaults );
 
-			$_id = wp_insert_post( $args, true );
+	}
 
-		}
+	/**
+	 * Given the donation form data set up the variables
+	 *
+	 * @since  1.5
+	 *
+	 * @param  object $donation_form The Donation Form Object
+	 *
+	 * @return bool             If the setup was successful or not
+	 */
+	private function setup_donation_form( $donation_form ) {
 
-		$donate_form = WP_Post::get_instance( $_id );
-
-		if ( ! is_object( $donate_form ) ) {
+		if ( ! is_object( $donation_form ) ) {
 			return false;
 		}
 
-		if ( ! is_a( $donate_form, 'WP_Post' ) ) {
+		if ( ! is_a( $donation_form, 'WP_Post' ) ) {
 			return false;
 		}
 
-		if ( 'give_forms' !== $donate_form->post_type ) {
+		if ( 'give_forms' !== $donation_form->post_type ) {
 			return false;
 		}
 
-		foreach ( $donate_form as $key => $value ) {
+		foreach ( $donation_form as $key => $value ) {
 
-			$this->$key = $value;
+			switch ( $key ) {
+
+				default:
+					$this->$key = $value;
+					break;
+
+			}
 
 		}
+
+		return true;
 
 	}
 
@@ -136,6 +173,52 @@ class Give_Donate_Form {
 	}
 
 	/**
+	 * Creates a donation form
+	 *
+	 * @since  1.5
+	 *
+	 * @param  array $data Array of attributes for a donation form
+	 *
+	 * @return mixed  false if data isn't passed and class not instantiated for creation, or New Form ID
+	 */
+	public function create( $data = array() ) {
+
+		if ( $this->id != 0 ) {
+			return false;
+		}
+
+		$defaults = array(
+			'post_type'   => 'give_forms',
+			'post_status' => 'draft',
+			'post_title'  => __( 'New Donation Form', 'give' )
+		);
+
+		$args = wp_parse_args( $data, $defaults );
+
+		/**
+		 * Fired before a donation form is created
+		 *
+		 * @param array $args The post object arguments used for creation.
+		 */
+		do_action( 'give_form_pre_create', $args );
+
+		$id = wp_insert_post( $args, true );
+
+		$donation_form = WP_Post::get_instance( $id );
+
+		/**
+		 * Fired after a the donation form is created
+		 *
+		 * @param int $id The post ID of the created item.
+		 * @param array $args The post object arguments used for creation.
+		 */
+		do_action( 'give_form_post_create', $id, $args );
+
+		return $this->setup_donation_form( $donation_form );
+
+	}
+
+	/**
 	 * Retrieve the ID
 	 *
 	 * @since 1.0
@@ -147,6 +230,16 @@ class Give_Donate_Form {
 
 	}
 
+	/**
+	 * Retrieve the donation form name
+	 *
+	 * @since 1.5
+	 * @return string Name of the donation form
+	 */
+	public function get_name() {
+		return get_the_title( $this->ID );
+	}
+	
 	/**
 	 * Retrieve the price
 	 *
@@ -171,7 +264,14 @@ class Give_Donate_Form {
 
 		}
 
+		/**
+		 * Override the donation form price.
+		 *
+		 * @param string $price The donation form's price(s).
+		 * @param string|int $id The form ID.
+		 */
 		return apply_filters( 'give_get_set_price', $this->price, $this->ID );
+
 	}
 
 	/**
@@ -344,6 +444,9 @@ class Give_Donate_Form {
 	 * Decrement the sale count by one
 	 *
 	 * @since 1.0
+	 *
+	 * @param int $quantity The quantity to decrease by
+	 *
 	 * @return int|false
 	 */
 	public function decrease_sales( $quantity = 1 ) {
@@ -426,15 +529,20 @@ class Give_Donate_Form {
 
 		$earnings = give_get_form_earnings_stats( $this->ID );
 
-		if ( $earnings > 0 ) // Only decrease if greater than zero
-		{
-			$earnings = $earnings - (float) $amount;
-		}
+		// Only decrease if greater than zero
+		if ( $earnings > 0 ) {
 
-		if ( update_post_meta( $this->ID, '_give_form_earnings', $earnings ) ) {
-			$this->earnings = $earnings;
+			// Only decrease if greater than zero
+			$new_amount = $earnings - (float) $amount;
 
-			return $earnings;
+			if ( $this->update_meta( '_give_form_earnings', $new_amount ) ) {
+
+				$this->earnings = $new_amount;
+
+				return $this->earnings;
+
+			}
+
 		}
 
 		return false;
