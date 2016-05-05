@@ -168,7 +168,7 @@ function give_update_payment_details( $data ) {
 				// Failed to crete the new customer, assume the previous customer
 				$customer_changed = false;
 				$customer         = new Give_Customer( $curr_customer_id );
-				give_set_error( 'give-payment-new-customer-fail', __( 'Error creating new customer', 'give' ) );
+				give_set_error( 'give-payment-new-customer-fail', __( 'Error creating new donor', 'give' ) );
 			}
 		}
 
@@ -266,7 +266,7 @@ function give_update_payment_details( $data ) {
 
 	do_action( 'give_updated_edited_purchase', $payment_id );
 
-	wp_safe_redirect( admin_url( 'edit.php?post_type=download&page=give-payment-history&view=view-order-details&give-message=payment-updated&id=' . $payment_id ) );
+	wp_safe_redirect( admin_url( 'edit.php?post_type=give_forms&page=give-payment-history&view=view-order-details&give-message=payment-updated&id=' . $payment_id ) );
 	exit;
 }
 
@@ -298,6 +298,9 @@ function give_trigger_purchase_delete( $data ) {
 
 add_action( 'give_delete_payment', 'give_trigger_purchase_delete' );
 
+/**
+ * Give AJAX Store Payment Note
+ */
 function give_ajax_store_payment_note() {
 
 	$payment_id = absint( $_POST['payment_id'] );
