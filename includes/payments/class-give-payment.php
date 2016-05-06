@@ -875,14 +875,18 @@ final class Give_Payment {
 
 		// Sanitizing the price here so we don't have a dozen calls later
 		$item_price = give_sanitize_amount( $item_price );
+		$quantity   = isset($args['quantity']) ? absint( $args['quantity'] ) : 1;
 		$amount     = round( $item_price, give_currency_decimal_filter() );
 
 		// Setup the donations meta item
 		$new_donation = array(
 			'id' => $donation->ID,
+			'quantity' => $quantity,
 		);
 
-		$default_options = array();
+		$default_options = array(
+			'quantity' => $quantity,
+		);
 
 		if ( false !== $args['price_id'] ) {
 			$default_options['price_id'] = (int) $args['price_id'];
@@ -903,7 +907,7 @@ final class Give_Payment {
 		$this->payment_details[] = array(
 			'name'       => $donation->post_title,
 			'id'         => $donation->ID,
-			'quantity'   => 1,
+			'quantity'   => $quantity,
 			'options'    => $options,
 			'item_price' => round( $item_price, give_currency_decimal_filter() ),
 			'subtotal'   => round( $subtotal, give_currency_decimal_filter() ),
@@ -1837,7 +1841,7 @@ final class Give_Payment {
 	private function setup_email() {
 		$email = $this->get_meta( '_give_payment_user_email', true );
 
-		if ( empty( $email ) && isset( $this->customer_id ) ) {
+		if ( empty( $email ) ) {
 			$email = Give()->customers->get_column( 'email', $this->customer_id );
 		}
 

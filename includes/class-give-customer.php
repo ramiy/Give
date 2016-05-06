@@ -212,6 +212,11 @@ class Give_Customer {
 			$args['payment_ids'] = implode( ',', array_unique( array_values( $args['payment_ids'] ) ) );
 		}
 
+		/**
+		 * Fires before a customer is created
+		 *
+		 * @param array $args Contains customer information such as payment ID, name, and email.
+		 */
 		do_action( 'give_customer_pre_create', $args );
 
 		$created = false;
@@ -228,6 +233,12 @@ class Give_Customer {
 			$created = $this->id;
 		}
 
+		/**
+		 * Fires after a customer is created
+		 *
+		 * @param int   $created If created successfully, the customer ID.  Defaults to false.
+		 * @param array $args Contains customer information such as payment ID, name, and email.
+		 */
 		do_action( 'give_customer_post_create', $created, $args );
 
 		return $created;
@@ -285,25 +296,27 @@ class Give_Customer {
 			return false;
 		}
 
-		if ( empty( $this->payment_ids ) ) {
+		$payment = new Give_Payment( $payment_id );
 
-			$new_payment_ids = $payment_id;
+		if( empty( $this->payment_ids ) ) {
+
+			$new_payment_ids = $payment->ID;
 
 		} else {
 
 			$payment_ids = array_map( 'absint', explode( ',', $this->payment_ids ) );
 
-			if ( in_array( $payment_id, $payment_ids ) ) {
+			if ( in_array( $payment->ID, $payment_ids ) ) {
 				$update_stats = false;
 			}
 
-			$payment_ids[] = $payment_id;
+			$payment_ids[] = $payment->ID;
 
 			$new_payment_ids = implode( ',', array_unique( array_values( $payment_ids ) ) );
 
 		}
 
-		do_action( 'give_customer_pre_attach_payment', $payment_id, $this->id );
+		do_action( 'give_customer_pre_attach_payment', $payment->ID, $this->id );
 
 		$payment_added = $this->update( array( 'payment_ids' => $new_payment_ids ) );
 
@@ -313,10 +326,9 @@ class Give_Customer {
 
 			// We added this payment successfully, increment the stats
 			if ( $update_stats ) {
-				$payment_amount = give_get_payment_amount( $payment_id );
 
-				if ( ! empty( $payment_amount ) ) {
-					$this->increase_value( $payment_amount );
+				if ( ! empty( $payment->total ) ) {
+					$this->increase_value( $payment->total );
 				}
 
 				$this->increase_purchase_count();
@@ -324,7 +336,7 @@ class Give_Customer {
 
 		}
 
-		do_action( 'give_customer_post_attach_payment', $payment_added, $payment_id, $this->id );
+		do_action( 'give_customer_post_attach_payment', $payment_added, $payment->ID, $this->id );
 
 		return $payment_added;
 	}
@@ -346,13 +358,19 @@ class Give_Customer {
 			return false;
 		}
 
+		$payment = new Give_Payment( $payment_id );
+		
+		if ( 'publish' !== $payment->status && 'revoked' !== $payment->status ) {
+			$update_stats = false;
+		}
+
 		$new_payment_ids = '';
 
 		if ( ! empty( $this->payment_ids ) ) {
 
 			$payment_ids = array_map( 'absint', explode( ',', $this->payment_ids ) );
 
-			$pos = array_search( $payment_id, $payment_ids );
+			$pos = array_search( $payment->ID, $payment_ids );
 			if ( false === $pos ) {
 				return false;
 			}
@@ -364,7 +382,7 @@ class Give_Customer {
 
 		}
 
-		do_action( 'give_customer_pre_remove_payment', $payment_id, $this->id );
+		do_action( 'give_customer_pre_remove_payment', $payment->ID, $this->id );
 
 		$payment_removed = $this->update( array( 'payment_ids' => $new_payment_ids ) );
 
@@ -374,10 +392,8 @@ class Give_Customer {
 
 			if ( $update_stats ) {
 				// We removed this payment successfully, decrement the stats
-				$payment_amount = give_get_payment_amount( $payment_id );
-
-				if ( ! empty( $payment_amount ) ) {
-					$this->decrease_value( $payment_amount );
+				if ( ! empty( $payment->total ) ) {
+					$this->decrease_value( $payment->total );
 				}
 
 				$this->decrease_purchase_count();
@@ -385,7 +401,7 @@ class Give_Customer {
 
 		}
 
-		do_action( 'give_customer_post_remove_payment', $payment_removed, $payment_id, $this->id );
+		do_action( 'give_customer_post_remove_payment', $payment_removed, $payment->ID, $this->id );
 
 		return $payment_removed;
 

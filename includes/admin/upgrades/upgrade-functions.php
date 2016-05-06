@@ -318,7 +318,7 @@ echo '</pre>';
 			//Check if this payment has proper `payment_details` set
 			if ( empty( $payment->payment_details ) ) {
 
-				$form_id    = isset( $payment->payment_meta['form_id'] ) ? $payment->payment_meta['form_id'] : give_get_payment_form_id( $payment->ID );
+				$form_id    = isset( $payment->payment_meta['form_id'] ) ? $payment->payment_meta['form_id'] : @give_get_payment_form_id( $payment->ID );
 				$form_title = isset( $payment->payment_meta['form_title'] ) ? $payment->payment_meta['form_title'] : get_the_title( $form_id );
 				$price_id =   isset( $payment->payment_meta['price_id'] ) ? (int) $payment->payment_meta['price_id'] : 0;
 

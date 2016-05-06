@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @group give_payments
+ * Class Tests_Payment_Class
  */
 class Tests_Payment_Class extends WP_UnitTestCase {
 
@@ -19,11 +19,11 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$this->_payment_key = give_get_payment_key( $payment_id );
 
 		$this->_payment_id = $payment_id;
-		$this->_key = $this->_payment_key;
+		$this->_key        = $this->_payment_key;
 
 		$this->_transaction_id = 'FIR3SID3';
 		give_set_payment_transaction_id( $payment_id, $this->_transaction_id );
-		give_insert_payment_note( $payment_id, sprintf( __( 'PayPal Transaction ID: %s', 'give' ) , $this->_transaction_id ) );
+		give_insert_payment_note( $payment_id, sprintf( __( 'PayPal Transaction ID: %s', 'give' ), $this->_transaction_id ) );
 
 		// Make sure we're working off a clean object caching in WP Core.
 		// Prevents some payment_meta from not being present.
@@ -40,6 +40,7 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 	}
 
 	public function test_IDs() {
+
 		$payment = new Give_Payment( $this->_payment_id );
 		$this->assertEquals( $this->_payment_id, $payment->ID );
 		$this->assertEquals( $payment->_ID, $payment->ID );
@@ -62,64 +63,67 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 
 	public function test_getting_no_payment() {
 		$payment = new Give_Payment();
-		$this->assertEquals( NULL, $payment->ID );
+		$this->assertEquals( null, $payment->ID );
 
 		$payment = new Give_Payment( 99999999999 );
-		$this->assertEquals( NULL, $payment->ID );
+		$this->assertEquals( null, $payment->ID );
 	}
 
 	public function test_payment_status_update() {
+
 		$payment = new Give_Payment( $this->_payment_id );
+
 		$payment->update_status( 'pending' );
 		$this->assertEquals( 'pending', $payment->status );
 		$this->assertEquals( 'Pending', $payment->status_nicename );
 
-		// Test backwards compat
+		// Test backwards compatibility
 		give_update_payment_status( $this->_payment_id, 'publish' );
 
 		// Need to get the payment again since it's been updated
 		$payment = new Give_Payment( $this->_payment_id );
+
 		$this->assertEquals( 'publish', $payment->status );
 		$this->assertEquals( 'Complete', $payment->status_nicename );
 	}
 
 	public function test_add_donation() {
 		$payment = new Give_Payment( $this->_payment_id );
-		$this->assertEquals( 2, count( $payment->downloads ) );
+		$this->assertEquals( 2, count( $payment->donations ) );
 		$this->assertEquals( 120.00, $payment->total );
 
-		$new_download   = Give_Helper_Download::create_simple_download();
+		$new_form = Give_Helper_Form::create_simple_form();
 
-		$payment->add_donation( $new_download->ID );
+		$payment->add_donation( $new_form->ID );
 		$payment->save();
 
-		$this->assertEquals( 3, count( $payment->downloads ) );
+		$this->assertEquals( 3, count( $payment->donations ) );
 		$this->assertEquals( 140.00, $payment->total );
 	}
 
 	public function test_add_donation_zero_item_price() {
 
 		$payment = new Give_Payment( $this->_payment_id );
-		$this->assertEquals( 2, count( $payment->downloads ) );
+		$this->assertEquals( 2, count( $payment->donations ) );
 		$this->assertEquals( 120.00, $payment->total );
 
-		$new_download = Give_Helper_Download::create_simple_download();
+		$new_form = Give_Helper_Form::create_simple_form();
 
 		$args = array(
 			'item_price' => 0,
 		);
 
-		$payment->add_donation( $new_download->ID, $args );
+		$payment->add_donation( $new_form->ID, $args );
 		$payment->save();
 
-		$this->assertEquals( 3, count( $payment->downloads ) );
+		$this->assertEquals( 3, count( $payment->donations ) );
 		$this->assertEquals( 120.00, $payment->total );
 
 	}
 
 	public function test_add_donation_with_fee() {
 		$payment = new Give_Payment( $this->_payment_id );
-		$args = array(
+		$args    = array(
 			'fees' => array(
 				array(
 					'amount' => 5,
@@ -128,69 +132,69 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 			),
 		);
 
-		$new_download   = Give_Helper_Download::create_simple_download();
+		$new_form = Give_Helper_Form::create_simple_form();
 
-		$payment->add_donation( $new_download->ID, $args );
+		$payment->add_donation( $new_form->ID, $args );
 		$payment->save();
 
-		$this->assertFalse( empty( $payment->cart_details[2]['fees'] ) );
+		$this->assertFalse( empty( $payment->payment_details[2]['fees'] ) );
 	}
 
-	public function test_remove_download() {
+	public function test_remove_donation() {
 		$payment = new Give_Payment( $this->_payment_id );
-		$this->assertEquals( 2, count( $payment->downloads ) );
+		$this->assertEquals( 2, count( $payment->donations ) );
 		$this->assertEquals( 120.00, $payment->total );
 
-		$download_id = $payment->cart_details[0]['id'];
-		$amount      = $payment->cart_details[0]['price'];
-		$quantity    = $payment->cart_details[0]['quantity'];
+		$download_id = $payment->payment_details[0]['id'];
+		$amount      = $payment->payment_details[0]['price'];
+		$quantity    = $payment->payment_details[0]['quantity'];
 
 		$remove_args = array( 'amount' => $amount, 'quantity' => $quantity );
-		$payment->remove_download( $download_id, $remove_args );
+		$payment->remove_donation( $download_id, $remove_args );
 		$payment->save();
 
-		$this->assertEquals( 1, count( $payment->downloads ) );
+		$this->assertEquals( 1, count( $payment->donations ) );
 		$this->assertEquals( 100.00, $payment->total );
 	}
 
-	public function test_remove_download_by_index() {
+	public function test_remove_donation_by_index() {
 		$payment = new Give_Payment( $this->_payment_id );
-		$this->assertEquals( 2, count( $payment->downloads ) );
+		$this->assertEquals( 2, count( $payment->donations ) );
 		$this->assertEquals( 120.00, $payment->total );
 
-		$download_id = $payment->cart_details[1]['id'];
+		$download_id = $payment->payment_details[1]['id'];
 
 		$remove_args = array( 'cart_index' => 1 );
-		$payment->remove_download( $download_id, $remove_args );
+		$payment->remove_donation( $download_id, $remove_args );
 		$payment->save();
 
-		$this->assertEquals( 1, count( $payment->downloads ) );
+		$this->assertEquals( 1, count( $payment->donations ) );
 		$this->assertEquals( 20.00, $payment->total );
 	}
 
-	public function test_remove_download_with_quantity() {
+	public function test_remove_donation_with_quantity() {
 		global $give_options;
 		Give_Helper_Payment::delete_payment( $this->_payment_id );
 
 		$give_options['item_quantities'] = true;
-		$payment_id = Give_Helper_Payment::create_simple_payment_with_quantity_tax();
+		$payment_id                      = Give_Helper_Payment::create_simple_payment_with_quantity();
 
 		$payment = new Give_Payment( $payment_id );
-		$this->assertEquals( 2, count( $payment->downloads ) );
+		$this->assertEquals( 2, count( $payment->donations ) );
 		$this->assertEquals( 240.00, $payment->subtotal );
 		$this->assertEquals( 22, $payment->tax );
 		$this->assertEquals( 262.00, $payment->total );
 
 		$testing_index = 1;
-		$download_id   = $payment->cart_details[ $testing_index ]['id'];
+		$form_id       = $payment->payment_details[ $testing_index ]['id'];
 
 		$remove_args = array( 'quantity' => 1 );
-		$payment->remove_download( $download_id, $remove_args );
+		$payment->remove_donation( $form_id, $remove_args );
 		$payment->save();
 
 		$payment = new Give_Payment( $payment_id );
-		$this->assertEquals( 2, count( $payment->downloads ) );
-		$this->assertEquals( 1, $payment->cart_details[ $testing_index ]['quantity'] );
+		$this->assertEquals( 2, count( $payment->donations ) );
+		$this->assertEquals( 1, $payment->payment_details[ $testing_index ]['quantity'] );
 		$this->assertEquals( 140.00, $payment->subtotal );
 		$this->assertEquals( 12, $payment->tax );
 		$this->assertEquals( 152.00, $payment->total );
@@ -343,7 +347,7 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 
 	public function test_for_searlized_user_info() {
 		// Issue #4248
-		$payment = new Give_Payment( $this->_payment_id );
+		$payment            = new Give_Payment( $this->_payment_id );
 		$payment->user_info = serialize( array( 'first_name' => 'John', 'last_name' => 'Doe' ) );
 		// Save re-runs the setup process
 		$payment->save();
@@ -373,11 +377,11 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$payment      = new Give_Payment( $this->_payment_id );
 		$current_date = $payment->date;
 
-		$new_date = strtotime( $payment->date ) + DAY_IN_SECONDS;
+		$new_date      = strtotime( $payment->date ) + DAY_IN_SECONDS;
 		$payment->date = date( 'Y-m-d H:i:s', $new_date );
 		$payment->save();
 
-		$date2    = strtotime( $payment->date );
+		$date2 = strtotime( $payment->date );
 		$this->assertEquals( $new_date, $date2 );
 	}
 
@@ -385,25 +389,25 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$payment      = new Give_Payment( $this->_payment_id );
 		$current_date = $payment->date;
 
-		$new_date = strtotime( $payment->date ) - DAY_IN_SECONDS;
+		$new_date      = strtotime( $payment->date ) - DAY_IN_SECONDS;
 		$payment->date = date( 'Y-m-d H:i:s', $new_date );
 		$payment->save();
 
-		$date2    = strtotime( $payment->date );
+		$date2 = strtotime( $payment->date );
 		$this->assertEquals( $new_date, $date2 );
 	}
 
 	public function test_refund_payment() {
-		$payment  = new Give_Payment( $this->_payment_id );
+		$payment         = new Give_Payment( $this->_payment_id );
 		$payment->status = 'complete';
 		$payment->save();
 
-		$download = new Give_Download( $payment->downloads[0]['id'] );
-		$earnings = $download->earnings;
-		$sales    = $download->sales;
+		$form     = new Give_Donate_Form( $payment->donations[0]['id'] );
+		$earnings = $form->earnings;
+		$sales    = $form->sales;
 
-		$store_earnings = give_get_total_earnings();
-		$store_sales    = give_get_total_sales();
+		$site_earnings = give_get_total_earnings();
+		$site_sales    = give_get_total_sales();
 
 		$payment->refund();
 
@@ -413,25 +417,25 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$this->assertEquals( 'refunded', $status );
 		$this->assertEquals( 'refunded', $payment->status );
 
-		$download2 = new Give_Download( $download->ID );
+		$form2 = new Give_Donate_Form( $form->ID );
 
-		$this->assertEquals( $earnings - $download->price, $download2->earnings );
-		$this->assertEquals( $sales - 1, $download2->sales );
+		$this->assertEquals( $earnings - $form2->price, $form2->earnings );
+		$this->assertEquals( $sales - 1, $form2->sales );
 
-		$this->assertEquals( $store_earnings - $payment->total, give_get_total_earnings() );
-		$this->assertEquals( $store_sales - 1, give_get_total_sales() );
+		$this->assertEquals( $site_earnings - $payment->total, give_get_total_earnings() );
+		$this->assertEquals( $site_sales - 1, give_get_total_sales() );
 	}
 
 	public function test_refund_payment_legacy() {
-		$payment  = new Give_Payment( $this->_payment_id );
+		$payment         = new Give_Payment( $this->_payment_id );
 		$payment->status = 'complete';
 		$payment->save();
 
-		$download = new Give_Download( $payment->downloads[0]['id'] );
-		$earnings = $download->earnings;
-		$sales    = $download->sales;
+		$form     = new Give_Donate_Form( $payment->donations[0]['id'] );
+		$earnings = $form->earnings;
+		$sales    = $form->sales;
 
-		give_undo_purchase_on_refund( $payment->ID, 'refunded', 'publish' );
+		give_undo_donation_on_refund( $payment->ID, 'refunded', 'publish' );
 
 		wp_cache_flush();
 
@@ -440,49 +444,50 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$this->assertEquals( 'refunded', $status );
 		$this->assertEquals( 'refunded', $payment->status );
 
-		$download2 = new Give_Download( $download->ID );
+		$form2 = new Give_Donate_Form( $form->ID );
 
-		$this->assertEquals( $earnings - $download->price, $download2->earnings );
-		$this->assertEquals( $sales - 1, $download2->sales );
+		$this->assertEquals( $earnings - $form->price, $form2->earnings );
+		$this->assertEquals( $sales - 1, $form2->sales );
 
 	}
 
 	public function test_remove_with_multi_price_points_by_price_id() {
+
 		Give_Helper_Payment::delete_payment( $this->_payment_id );
 
-		$download = Give_Helper_Download::create_variable_download_with_multi_price_purchase();
-		$payment  = new Give_Payment();
+		$form    = Give_Helper_Form::create_multilevel_form();
+		$payment = new Give_Payment();
 
-		$payment->add_donation( $download->ID, array( 'price_id' => 0 ) );
-		$payment->add_donation( $download->ID, array( 'price_id' => 1 ) );
-		$payment->add_donation( $download->ID, array( 'price_id' => 2 ) );
-		$payment->add_donation( $download->ID, array( 'price_id' => 3 ) );
+		$payment->add_donation( $form->ID, array( 'price_id' => 0 ) );
+		$payment->add_donation( $form->ID, array( 'price_id' => 1 ) );
+		$payment->add_donation( $form->ID, array( 'price_id' => 2 ) );
+		$payment->add_donation( $form->ID, array( 'price_id' => 3 ) );
 
-		$this->assertEquals( 4, count( $payment->downloads ) );
+		$this->assertEquals( 4, count( $payment->donations ) );
 		$this->assertEquals( 620, $payment->total );
 
 		$payment->status = 'complete';
 		$payment->save();
 
-		$payment->remove_download( $download->ID, array( 'price_id' => 1 ) );
+		$payment->remove_donation( $form->ID, array( 'price_id' => 1 ) );
 		$payment->save();
 
-		$this->assertEquals( 3, count( $payment->downloads ) );
+		$this->assertEquals( 3, count( $payment->donations ) );
 
-		$this->assertEquals( 0, $payment->downloads[0]['options']['price_id'] );
-		$this->assertEquals( 0, $payment->cart_details[0]['item_number']['options']['price_id'] );
+		$this->assertEquals( 0, $payment->donations[0]['options']['price_id'] );
+		$this->assertEquals( 0, $payment->payment_details[0]['options']['price_id'] );
 
-		$this->assertEquals( 2, $payment->downloads[1]['options']['price_id'] );
-		$this->assertEquals( 2, $payment->cart_details[2]['item_number']['options']['price_id'] );
+		$this->assertEquals( 2, $payment->donations[1]['options']['price_id'] );
+		$this->assertEquals( 2, $payment->payment_details[2]['options']['price_id'] );
 
-		$this->assertEquals( 3, $payment->downloads[2]['options']['price_id'] );
-		$this->assertEquals( 3, $payment->cart_details[3]['item_number']['options']['price_id'] );
+		$this->assertEquals( 3, $payment->donations[2]['options']['price_id'] );
+		$this->assertEquals( 3, $payment->payment_details[3]['options']['price_id'] );
 	}
 
 	public function test_remove_with_multi_price_points_by_cart_index() {
 		Give_Helper_Payment::delete_payment( $this->_payment_id );
 
-		$download = Give_Helper_Download::create_variable_download_with_multi_price_purchase();
+		$download = Give_Helper_Form::create_multilevel_form();
 		$payment  = new Give_Payment();
 
 		$payment->add_donation( $download->ID, array( 'price_id' => 0 ) );
@@ -490,85 +495,85 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$payment->add_donation( $download->ID, array( 'price_id' => 2 ) );
 		$payment->add_donation( $download->ID, array( 'price_id' => 3 ) );
 
-		$this->assertEquals( 4, count( $payment->downloads ) );
+		$this->assertEquals( 4, count( $payment->donations ) );
 		$this->assertEquals( 620, $payment->total );
 
 		$payment->status = 'complete';
 		$payment->save();
 
-		$payment->remove_download( $download->ID, array( 'cart_index' => 1 ) );
-		$payment->remove_download( $download->ID, array( 'cart_index' => 2 ) );
+		$payment->remove_donation( $download->ID, array( 'cart_index' => 1 ) );
+		$payment->remove_donation( $download->ID, array( 'cart_index' => 2 ) );
 		$payment->save();
 
-		$this->assertEquals( 2, count( $payment->downloads ) );
+		$this->assertEquals( 2, count( $payment->donations ) );
 
-		$this->assertEquals( 0, $payment->downloads[0]['options']['price_id'] );
-		$this->assertEquals( 0, $payment->cart_details[0]['item_number']['options']['price_id'] );
+		$this->assertEquals( 0, $payment->donations[0]['options']['price_id'] );
+		$this->assertEquals( 0, $payment->payment_details[0]['options']['price_id'] );
 
-		$this->assertEquals( 3, $payment->downloads[1]['options']['price_id'] );
-		$this->assertEquals( 3, $payment->cart_details[3]['item_number']['options']['price_id'] );
+		$this->assertEquals( 3, $payment->donations[1]['options']['price_id'] );
+		$this->assertEquals( 3, $payment->payment_details[3]['options']['price_id'] );
 
 	}
 
 	public function test_remove_with_multiple_same_price_by_price_id_different_prices() {
 		Give_Helper_Payment::delete_payment( $this->_payment_id );
 
-		$download = Give_Helper_Download::create_variable_download_with_multi_price_purchase();
+		$download = Give_Helper_Form::create_multilevel_form();
 		$payment  = new Give_Payment();
 
 		$payment->add_donation( $download->ID, array( 'price_id' => 0, 'item_price' => 10 ) );
 		$payment->add_donation( $download->ID, array( 'price_id' => 0, 'item_price' => 20 ) );
 		$payment->add_donation( $download->ID, array( 'price_id' => 0, 'item_price' => 30 ) );
 
-		$this->assertEquals( 3, count( $payment->downloads ) );
+		$this->assertEquals( 3, count( $payment->donations ) );
 		$this->assertEquals( 60, $payment->total );
 
 		$payment->status = 'complete';
 		$payment->save();
 
-		$payment->remove_download( $download->ID, array( 'price_id' => 0, 'item_price' => 20 ) );
+		$payment->remove_donation( $download->ID, array( 'price_id' => 0, 'item_price' => 20 ) );
 		$payment->save();
 
-		$this->assertEquals( 2, count( $payment->downloads ) );
+		$this->assertEquals( 2, count( $payment->donations ) );
 
-		$this->assertEquals( 0, $payment->downloads[0]['options']['price_id'] );
-		$this->assertEquals( 0, $payment->cart_details[0]['item_number']['options']['price_id'] );
-		$this->assertEquals( 10, $payment->cart_details[0]['item_price'] );
+		$this->assertEquals( 0, $payment->donations[0]['options']['price_id'] );
+		$this->assertEquals( 0, $payment->payment_details[0]['options']['price_id'] );
+		$this->assertEquals( 10, $payment->payment_details[0]['item_price'] );
 
-		$this->assertEquals( 0, $payment->downloads[1]['options']['price_id'] );
-		$this->assertEquals( 0, $payment->cart_details[2]['item_number']['options']['price_id'] );
-		$this->assertEquals( 30, $payment->cart_details[2]['item_price'] );
+		$this->assertEquals( 0, $payment->donations[1]['options']['price_id'] );
+		$this->assertEquals( 0, $payment->payment_details[2]['options']['price_id'] );
+		$this->assertEquals( 30, $payment->payment_details[2]['item_price'] );
 
 	}
 
 	public function test_remove_with_multiple_same_price_by_price_id_same_prices() {
 		Give_Helper_Payment::delete_payment( $this->_payment_id );
 
-		$download = Give_Helper_Download::create_variable_download_with_multi_price_purchase();
-		$payment  = new Give_Payment();
+		$form    = Give_Helper_Form::create_multilevel_form();
+		$payment = new Give_Payment();
 
-		$payment->add_donation( $download->ID, array( 'price_id' => 0, 'item_price' => 10 ) );
-		$payment->add_donation( $download->ID, array( 'price_id' => 0, 'item_price' => 10 ) );
-		$payment->add_donation( $download->ID, array( 'price_id' => 0, 'item_price' => 10 ) );
+		$payment->add_donation( $form->ID, array( 'price_id' => 0, 'item_price' => 10 ) );
+		$payment->add_donation( $form->ID, array( 'price_id' => 0, 'item_price' => 10 ) );
+		$payment->add_donation( $form->ID, array( 'price_id' => 0, 'item_price' => 10 ) );
 
-		$this->assertEquals( 3, count( $payment->downloads ) );
+		$this->assertEquals( 3, count( $payment->donations ) );
 		$this->assertEquals( 30, $payment->total );
 
 		$payment->status = 'complete';
 		$payment->save();
 
-		$payment->remove_download( $download->ID, array( 'price_id' => 0, 'item_price' => 10 ) );
+		$payment->remove_donation( $form->ID, array( 'price_id' => 0, 'item_price' => 10 ) );
 		$payment->save();
 
-		$this->assertEquals( 2, count( $payment->downloads ) );
+		$this->assertEquals( 2, count( $payment->donations ) );
 
-		$this->assertEquals( 0, $payment->downloads[0]['options']['price_id'] );
-		$this->assertEquals( 0, $payment->cart_details[1]['item_number']['options']['price_id'] );
-		$this->assertEquals( 10, $payment->cart_details[1]['item_price'] );
+		$this->assertEquals( 0, $payment->donations[0]['options']['price_id'] );
+		$this->assertEquals( 0, $payment->payment_details[1]['options']['price_id'] );
+		$this->assertEquals( 10, $payment->payment_details[1]['item_price'] );
 
-		$this->assertEquals( 0, $payment->downloads[1]['options']['price_id'] );
-		$this->assertEquals( 0, $payment->cart_details[2]['item_number']['options']['price_id'] );
-		$this->assertEquals( 10, $payment->cart_details[2]['item_price'] );
+		$this->assertEquals( 0, $payment->donations[1]['options']['price_id'] );
+		$this->assertEquals( 0, $payment->payment_details[2]['options']['price_id'] );
+		$this->assertEquals( 10, $payment->payment_details[2]['item_price'] );
 
 	}
 
@@ -578,34 +583,35 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$payment->save();
 
 		$customer = new Give_Customer( $payment->customer_id );
-		$download = new Give_Download( $payment->downloads[0]['id'] );
+		$form     = new Give_Donate_Form( $payment->donations[0]['id'] );
 
 		$customer_sales    = $customer->purchase_count;
 		$customer_earnings = $customer->purchase_value;
 
-		$download_sales    = $download->sales;
-		$download_earnings = $download->earnings;
+		$form_sales    = $form->sales;
+		$form_earnings = $form->earnings;
 
-		$store_earnings    = give_get_total_earnings();
-		$store_sales       = give_get_total_sales();
+		$site_earnings = give_get_total_earnings();
+		$site_sales    = give_get_total_sales();
 
 		$payment->refund();
 		wp_cache_flush();
 
 		$customer = new Give_Customer( $payment->customer_id );
-		$download = new Give_Download( $payment->downloads[0]['id'] );
+		$download = new Give_Donate_Form( $payment->donations[0]['id'] );
 
 		$this->assertEquals( $customer_earnings - $payment->total, $customer->purchase_value );
 		$this->assertEquals( $customer_sales - 1, $customer->purchase_count );
 
-		$this->assertEquals( $download_earnings - $payment->cart_details[0]['price'], $download->earnings );
-		$this->assertEquals( $download_sales - $payment->downloads[0]['quantity'], $download->sales );
+		$this->assertEquals( $form_earnings - $payment->payment_details[0]['price'], $form->earnings );
+		$this->assertEquals( $form_sales - $payment->donations[0]['quantity'], $form->sales );
 
-		$this->assertEquals( $store_earnings - $payment->total, give_get_total_earnings() );
-		$this->assertEquals( $store_sales - 1, give_get_total_sales() );
+		$this->assertEquals( $site_earnings - $payment->total, give_get_total_earnings() );
+		$this->assertEquals( $site_sales - 1, give_get_total_sales() );
 	}
 
 	public function test_refund_without_affecting_stats() {
+
 		add_filter( 'give_decrease_earnings_on_undo', '__return_false' );
 		add_filter( 'give_decrease_sales_on_undo', '__return_false' );
 		add_filter( 'give_decrease_customer_value_on_refund', '__return_false' );
@@ -617,32 +623,32 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$payment->save();
 
 		$customer = new Give_Customer( $payment->customer_id );
-		$download = new Give_Download( $payment->downloads[0]['id'] );
+		$form     = new Give_Donate_Form( $payment->donations[0]['id'] );
 
 		$customer_sales    = $customer->purchase_count;
 		$customer_earnings = $customer->purchase_value;
 
-		$download_sales    = $download->sales;
-		$download_earnings = $download->earnings;
+		$form_sales    = $form->sales;
+		$form_earnings = $form->earnings;
 
-		$store_earnings    = give_get_total_earnings();
-		$store_sales       = give_get_total_sales();
+		$site_earnings = give_get_total_earnings();
+		$site_sales    = give_get_total_sales();
 
 		$payment->refund();
 		wp_cache_flush();
 
 		$customer = new Give_Customer( $payment->customer_id );
-		$download = new Give_Download( $payment->downloads[0]['id'] );
+		$form     = new Give_Donate_Form( $payment->donations[0]['id'] );
 
 		$this->assertEquals( $customer_earnings, $customer->purchase_value );
 		$this->assertEquals( $customer_sales, $customer->purchase_count );
 
-		$this->assertEquals( $download_earnings, $download->earnings );
-		$this->assertEquals( $download_sales, $download->sales );
+		$this->assertEquals( $form_earnings, $form->earnings );
+		$this->assertEquals( $form_sales, $form->sales );
 
-		$this->assertEquals( $store_earnings, give_get_total_earnings() );
+		$this->assertEquals( $site_earnings, give_get_total_earnings() );
 		// Store sales are based off 'publish' & 'revoked' status. So it reduces this count
-		$this->assertEquals( $store_sales - 1, give_get_total_sales() );
+		$this->assertEquals( $site_sales - 1, give_get_total_sales() );
 
 		remove_filter( 'give_decrease_earnings_on_undo', '__return_false' );
 		remove_filter( 'give_decrease_sales_on_undo', '__return_false' );
@@ -657,16 +663,16 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$payment->save();
 
 		$customer = new Give_Customer( $payment->customer_id );
-		$download = new Give_Download( $payment->downloads[0]['id'] );
+		$form     = new Give_Donate_Form( $payment->donations[0]['id'] );
 
 		$customer_sales    = $customer->purchase_count;
 		$customer_earnings = $customer->purchase_value;
 
-		$download_sales    = $download->sales;
-		$download_earnings = $download->earnings;
+		$form_sales    = $form->sales;
+		$form_earnings = $form->earnings;
 
-		$store_earnings    = give_get_total_earnings();
-		$store_sales       = give_get_total_sales();
+		$site_earnings = give_get_total_earnings();
+		$site_sales    = give_get_total_sales();
 
 		$payment->status = 'pending';
 		$payment->save();
@@ -676,16 +682,16 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$this->assertEmpty( $payment->completed_date );
 
 		$customer = new Give_Customer( $payment->customer_id );
-		$download = new Give_Download( $payment->downloads[0]['id'] );
+		$form     = new Give_Donate_Form( $payment->donations[0]['id'] );
 
 		$this->assertEquals( $customer_earnings - $payment->total, $customer->purchase_value );
 		$this->assertEquals( $customer_sales - 1, $customer->purchase_count );
 
-		$this->assertEquals( $download_earnings - $payment->cart_details[0]['price'], $download->earnings );
-		$this->assertEquals( $download_sales - $payment->downloads[0]['quantity'], $download->sales );
+		$this->assertEquals( $form_earnings - $payment->payment_details[0]['price'], $form->earnings );
+		$this->assertEquals( $form_sales - $payment->donations[0]['quantity'], $form->sales );
 
-		$this->assertEquals( $store_earnings - $payment->total, give_get_total_earnings() );
-		$this->assertEquals( $store_sales - 1, give_get_total_sales() );
+		$this->assertEquals( $site_earnings - $payment->total, give_get_total_earnings() );
+		$this->assertEquals( $site_sales - 1, give_get_total_sales() );
 	}
 
 	public function test_pending_without_affecting_stats() {
@@ -700,16 +706,16 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$payment->save();
 
 		$customer = new Give_Customer( $payment->customer_id );
-		$download = new Give_Download( $payment->downloads[0]['id'] );
+		$form     = new Give_Donate_Form( $payment->donations[0]['id'] );
 
 		$customer_sales    = $customer->purchase_count;
 		$customer_earnings = $customer->purchase_value;
 
-		$download_sales    = $download->sales;
-		$download_earnings = $download->earnings;
+		$form_sales    = $form->sales;
+		$form_earnings = $form->earnings;
 
-		$store_earnings    = give_get_total_earnings();
-		$store_sales       = give_get_total_sales();
+		$site_earnings = give_get_total_earnings();
+		$site_sales    = give_get_total_sales();
 
 		$payment->status = 'pending';
 		$payment->save();
@@ -719,17 +725,17 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		$this->assertEmpty( $payment->completed_date );
 
 		$customer = new Give_Customer( $payment->customer_id );
-		$download = new Give_Download( $payment->downloads[0]['id'] );
+		$form     = new Give_Donate_Form( $payment->donations[0]['id'] );
 
 		$this->assertEquals( $customer_earnings, $customer->purchase_value );
 		$this->assertEquals( $customer_sales, $customer->purchase_count );
 
-		$this->assertEquals( $download_earnings, $download->earnings );
-		$this->assertEquals( $download_sales, $download->sales );
+		$this->assertEquals( $form_earnings, $form->earnings );
+		$this->assertEquals( $form_sales, $form->sales );
 
-		$this->assertEquals( $store_earnings, give_get_total_earnings() );
+		$this->assertEquals( $site_earnings, give_get_total_earnings() );
 		// Store sales are based off 'publish' & 'revoked' status. So it reduces this count
-		$this->assertEquals( $store_sales - 1, give_get_total_sales() );
+		$this->assertEquals( $site_sales - 1, give_get_total_sales() );
 
 		remove_filter( 'give_decrease_earnings_on_undo', '__return_false' );
 		remove_filter( 'give_decrease_sales_on_undo', '__return_false' );
@@ -738,27 +744,4 @@ class Tests_Payment_Class extends WP_UnitTestCase {
 		remove_filter( 'give_decrease_store_earnings_on_pending', '__return_false ' );
 	}
 
-	public function test_failed_payment_discount() {
-
-		$id   = Give_Helper_Discount::create_simple_percent_discount();
-		$uses = give_get_discount_uses( $id );
-
-		$payment = new Give_Payment( $this->_payment_id );
-		$payment->discounts = array( '20OFF' );
-		$payment->save();
-
-		$payment->status = 'complete';
-		$payment->save();
-
-		$new_complete = give_get_discount_uses( $id );
-
-		$this->assertEquals( $uses + 1, $new_complete );
-
-		$payment->status = 'failed';
-		$payment->save();
-
-		$new_failed = give_get_discount_uses( $id );
-		$this->assertEquals( $uses, $new_failed );
-
-	}
 }
