@@ -603,7 +603,6 @@ function give_get_average_monthly_form_earnings( $form_id = 0 ) {
 	return $earnings < 0 ? 0 : $earnings;
 }
 
-
 /**
  * Get Price Option Name (Text)
  *
@@ -611,7 +610,7 @@ function give_get_average_monthly_form_earnings( $form_id = 0 ) {
  *
  * @since       1.0
  *
- * @param int $form_id ID of the download
+ * @param int $form_id ID of the donation form
  * @param int $price_id ID of the price option
  * @param int $payment_id optional payment ID for use in filters
  *
@@ -622,17 +621,19 @@ function give_get_price_option_name( $form_id = 0, $price_id = 0, $payment_id = 
 	$prices     = give_get_variable_prices( $form_id );
 	$price_name = '';
 
-	foreach ( $prices as $price ) {
+	if ( $prices && is_array( $prices ) ) {
 
-		if ( intval( $price['_give_id']['level_id'] ) == intval( $price_id ) ) {
-			$price_name = isset( $price['_give_text'] ) ? $price['_give_text'] : '';
+		foreach ( $prices as $price ) {
+
+			if ( intval( $price['_give_id']['level_id'] ) == intval( $price_id ) ) {
+				$price_name = isset( $price['_give_text'] ) ? $price['_give_text'] : '';
+			}
+
 		}
-
 	}
 
 	return apply_filters( 'give_get_price_option_name', $price_name, $form_id, $payment_id, $price_id );
 }
-
 
 /**
  * Retrieves a price from from low to high of a variable priced form
