@@ -114,7 +114,7 @@ if ( ! class_exists( 'Give' ) ) :
 		/**
 		 * Give Customers DB Object
 		 *
-		 * @var Give_Customer object
+		 * @var object|Give_DB_Customers object
 		 * @since 1.0
 		 */
 		public $customers;
@@ -400,8 +400,9 @@ endif; // End if class_exists check
 
 
 /**
- * The main function responsible for returning the one true Give
- * Instance to functions everywhere.
+ * Start Give 
+ * 
+ * The main function responsible for returning the one true Give instance to functions everywhere.
  *
  * Use this function like you would a global variable, except without needing
  * to declare the global.
@@ -409,7 +410,7 @@ endif; // End if class_exists check
  * Example: <?php $give = Give(); ?>
  *
  * @since 1.0
- * @return object - The one true Give Instance
+ * @return object|Give 
  */
 function Give() {
 	return Give::instance();
