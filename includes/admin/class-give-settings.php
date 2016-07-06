@@ -1306,7 +1306,12 @@ function give_render_subsubtabs( $cmb_id, $object_id, $object_type, $cmb ) {
 			$name = isset( $field['name'] ) ? $field['name'] : 'Undefined';
 			$slug = sanitize_title( $name );
 
-			echo '<li><a href="#' . $slug . '">' . $name . '</a>&nbsp;|&nbsp;</li>';
+			$tab_url = esc_url( add_query_arg( array(
+				'subtab' => $slug
+			) ) );
+
+
+			echo '<li><a href="' . $tab_url . '" class="give-subtab give-subtab-' . $slug . '">' . $name . '</a>&nbsp;|&nbsp;</li>';
 
 		}
 
@@ -1344,6 +1349,8 @@ function give_render_subsubtab_classes( $classes, $field ) {
 add_filter( 'cmb2_row_classes', 'give_render_subsubtab_classes', 10, 2 );
 
 /**
+ * Clear Sub Sub Tabs $_GET param
+ *
  * @param $cmb_id
  * @param $object_id
  * @param $object_type

@@ -21,14 +21,29 @@ jQuery(document).ready(function ($) {
         tab_switch($(this));
     });
 
+    //Subtab
+    $('.sub-nav-tab').on('click', function (e) {
+        e.preventDefault();
+        subtab_switch($(this));
+    });
+
     /**
-     * TAB SWITCH
+     * Sub Tab Switch
+     *
+     * @param $tab
+     */
+    function subtab_switch($tab) {
+
+    }
+
+    /**
+     * Tab Switch
      *
      * Changes the tab content when tab is clicked.
      *
      * @param $tab
      *
-     * @since 1.0.0
+     * @since 1.5
      */
     function tab_switch($tab) {
 
@@ -71,6 +86,7 @@ jQuery(document).ready(function ($) {
 
             history.pushState(stateObject, $(document).find('title').text(), url);
         }
+
     }
 
     /**
