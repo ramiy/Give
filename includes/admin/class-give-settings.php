@@ -68,7 +68,8 @@ class Give_Plugin_Settings {
 		// Include CMB CSS in the head to avoid FOUC
 		add_action( 'admin_print_styles-give_forms_page_give-settings', array( 'CMB2_hookup', 'enqueue_cmb_css' ) );
 
-		add_filter( 'cmb2_get_metabox_form_format', array( $this, 'give_modify_cmb2_form_output' ), 10, 3 );
+		add_filter( 'cmb2_get_metabox_form_format', array( $this, 'modify_cmb2_form_output' ), 10, 3 );
+
 
 	}
 
@@ -155,7 +156,7 @@ class Give_Plugin_Settings {
 						'tab'              => $tab_id
 					) ) );
 
-					$active       = $active_tab == $tab_id ? ' nav-tab-active' : '';
+					$active = $active_tab == $tab_id ? ' nav-tab-active' : '';
 
 					echo '<a href="' . esc_url( $tab_url ) . '" title="' . esc_attr( $tab_name ) . '" class="nav-tab' . $active . '" id="tab-' . $tab_id . '">' . esc_html( $tab_name ) . '</a>';
 
@@ -196,8 +197,7 @@ class Give_Plugin_Settings {
 	 * @since 1.5 Modified to CSS hide non-active tabs
 	 * @since 1.0
 	 */
-	function give_modify_cmb2_form_output( $form_format, $object_id, $cmb ) {
-
+	function modify_cmb2_form_output( $form_format, $object_id, $cmb ) {
 
 		$pagenow = isset( $_GET['page'] ) ? $_GET['page'] : '';
 
@@ -212,10 +212,12 @@ class Give_Plugin_Settings {
 			//Set ID based off tab name - protects backwards compatibility
 			$tab_id = isset( $_GET['tab'] ) ? $_GET['tab'] : $cmb->meta_box['id'];
 
+
 			$save_button = apply_filters( 'give_save_button_markup', '<div class="give-submit-wrap"><input type="submit" name="submit-cmb" value="' . __( 'Save Settings', 'give' ) . '" class="button-primary"></div>' );
 
 			//Filter so some tabs won't have save settings
 			$no_save_button = apply_filters( 'give_settings_no_save_output', array(
+				'api',
 				'system_info'
 			) );
 
@@ -224,6 +226,7 @@ class Give_Plugin_Settings {
 			}
 
 			$form_format = '<form class="cmb-form" method="post" id="%1$s" enctype="multipart/form-data" encoding="multipart/form-data" ' . $style . ' data-tab="' . $tab_id . '"><input type="hidden" name="give_settings_saved" value="true"><input type="hidden" name="object_id" value="%2$s">%3$s' . $save_button . '</form>';
+
 
 		}
 
@@ -774,7 +777,7 @@ class Give_Plugin_Settings {
 		if ( $active_tab === null || ! isset( $give_settings[ $active_tab ] ) ) {
 
 			return apply_filters( 'give_registered_settings', $give_settings );
-			
+
 		}
 
 
@@ -1035,7 +1038,8 @@ function give_enabled_gateways_callback( $field_object, $escaped_value, $object_
  *
  * @since 1.0
  *
- * @param $field_object , $escaped_value, $object_id, $object_type, $field_type_object Arguments passed by CMB2
+ * @param $field_object
+ * @param $escaped_value , $object_id, $object_type, $field_type_object Arguments passed by CMB2
  *
  * @return void
  */
@@ -1278,3 +1282,77 @@ if ( file_exists( WP_PLUGIN_DIR . '/cmb2/init.php' ) && ! defined( 'CMB2_LOADED'
 } elseif ( file_exists( GIVE_PLUGIN_DIR . '/includes/libraries/CMB2/init.php' ) && ! defined( 'CMB2_LOADED' ) ) {
 	require_once GIVE_PLUGIN_DIR . '/includes/libraries/CMB2/init.php';
 }
+
+
+/**
+ * Render Sub Tabs
+ *
+ * @since 1.6
+ *
+ * @param $cmb_id
+ * @param $object_id
+ * @param $object_type
+ * @param $cmb
+ */
+function give_render_subsubtabs( $cmb_id, $object_id, $object_type, $cmb ) {
+
+	echo '<ul class="subsubsub">';
+
+	//Sub-Section Tabs
+	foreach ( $cmb->meta_box['fields'] as $field ) {
+
+		if ( $field['type'] == 'give_title' ) {
+
+			$name = isset( $field['name'] ) ? $field['name'] : 'Undefined';
+			$slug = sanitize_title( $name );
+
+			echo '<li><a href="#' . $slug . '">' . $name . '</a>&nbsp;|&nbsp;</li>';
+
+		}
+
+	}
+
+	echo '</ul>';
+}
+
+add_action( 'cmb2_before_form', 'give_render_subsubtabs', 10, 4 );
+
+
+/**
+ * Render Sub Sub Tabs Classes
+ *
+ * @since 1.6
+ *
+ * @param $classes
+ * @param $field
+ */
+function give_render_subsubtab_classes( $classes, $field ) {
+
+	if ( $field->args['type'] == 'give_title' ) {
+		$_GET['subsubtab'] = sanitize_title( $field->args['name'] );
+	}
+
+	if ( isset( $_GET['subsubtab'] ) && ! empty( $_GET['subsubtab'] ) ) {
+		return $classes . ' give-subsubtab-' . $_GET['subsubtab'];
+	} else {
+		return $classes;
+	}
+
+
+}
+
+add_filter( 'cmb2_row_classes', 'give_render_subsubtab_classes', 10, 2 );
+
+/**
+ * @param $cmb_id
+ * @param $object_id
+ * @param $object_type
+ * @param $cmb
+ */
+function give_clear_subsubtabs( $cmb_id, $object_id, $object_type, $cmb ) {
+	if ( isset( $_GET['subsubtab'] ) ) {
+		$_GET['subsubtab'] = '';
+	}
+}
+
+add_action( 'cmb2_after_form', 'give_clear_subsubtabs', 10, 4 );
