@@ -39,10 +39,7 @@ function give_add_options_links() {
 	$give_reports_page = add_submenu_page( 'edit.php?post_type=give_forms', esc_html__( 'Donation Reports', 'give' ), esc_html__( 'Reports', 'give' ), 'view_give_reports', 'give-reports', 'give_reports_page' );
 
 	//Settings
-	$give_settings_page = add_submenu_page( 'edit.php?post_type=give_forms', esc_html__( 'Give Settings', 'give' ), esc_html__( 'Settings', 'give' ), 'manage_give_settings', 'give-settings', array(
-		Give()->give_settings,
-		'admin_page_display'
-	) );
+	$give_settings_page = add_submenu_page( 'edit.php?post_type=give_forms', esc_html__( 'Give Settings', 'give' ), esc_html__( 'Settings', 'give' ), 'manage_give_settings', 'give-settings',  'give_settings_page' );
 
 	//Add-ons
 	$give_add_ons_page = add_submenu_page( 'edit.php?post_type=give_forms', esc_html__( 'Give Add-ons', 'give' ), esc_html__( 'Add-ons', 'give' ), 'install_plugins', 'give-addons', 'give_add_ons_page' );
@@ -54,6 +51,15 @@ function give_add_options_links() {
 }
 
 add_action( 'admin_menu', 'give_add_options_links', 10 );
+
+
+/**
+ * Init the settings page.
+ */
+function give_settings_page() {
+	Give_Admin_Settings::output();
+}
+
 
 /**
  *  Determines whether the current admin page is a Give admin page.
