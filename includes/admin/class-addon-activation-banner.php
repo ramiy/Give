@@ -7,12 +7,14 @@
  * https://github.com/WordImpress/Give-Activation-Banner
  */
 
-
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Class Give_Addon_Activation_Banner
+ */
 class Give_Addon_Activation_Banner {
 
 	/**
@@ -152,7 +154,13 @@ class Give_Addon_Activation_Banner {
 				<img src="<?php echo GIVE_PLUGIN_URL; ?>assets/images/svg/give-icon-full-circle.svg" class="give-logo" />
 
 				<!-- Your Message -->
-				<h3><?php echo sprintf( __( 'Thank you for installing Give\'s %1$s%2$s%3$s Add-on!', 'give' ), '<span>', $this->banner_details['name'], '</span>' ); ?></h3>
+				<h3><?php
+					printf(
+						/* translators: %s: Add-on name */
+						esc_html__( "Thank you for installing Give's %s Add-on!", 'give' ),
+						'<span>' . $this->banner_details['name'] . '</span>'
+					);
+				?></h3>
 
 				<a href="<?php
 				//The Dismiss Button
@@ -167,14 +175,22 @@ class Give_Addon_Activation_Banner {
 					<?php //Point them to your settings page
 					if ( isset( $this->banner_details['settings_url'] ) ) { ?>
 						<a href="<?php echo $this->banner_details['settings_url']; ?>">
-							<span class="dashicons dashicons-admin-settings"></span><?php _e( 'Go to Settings', 'give' ); ?>
+							<span class="dashicons dashicons-admin-settings"></span><?php esc_html_e( 'Go to Settings', 'give' ); ?>
 						</a>
 					<?php } ?>
 
 					<?php
 					// Show them how to configure the Addon
 					if ( isset( $this->banner_details['documentation_url'] ) ) { ?>
-						<a href="<?php echo $this->banner_details['documentation_url'] ?>" target="_blank"><span class="dashicons dashicons-media-text"></span><?php echo sprintf( __( 'Documentation: %1$s Add-on', 'give' ), $this->banner_details['name'] ); ?>
+						<a href="<?php echo $this->banner_details['documentation_url'] ?>" target="_blank">
+							<span class="dashicons dashicons-media-text"></span>
+							<?php
+								printf(
+									/* translators: %s: Add-on name */
+									esc_html__( 'Documentation: %s Add-on', 'give' ),
+									$this->banner_details['name']
+								);
+							?>
 						</a>
 					<?php } ?>
 					<?php
@@ -182,7 +198,7 @@ class Give_Addon_Activation_Banner {
 					if ( isset( $this->banner_details['support_url'] ) ) { ?>
 
 						<a href="<?php echo $this->banner_details['support_url'] ?>" target="_blank">
-							<span class="dashicons dashicons-sos"></span><?php _e( 'Get Support', 'give' ); ?>
+							<span class="dashicons dashicons-sos"></span><?php esc_html_e( 'Get Support', 'give' ); ?>
 						</a>
 
 					<?php } ?>
@@ -196,7 +212,8 @@ class Give_Addon_Activation_Banner {
 
 	/**
 	 * Ignore Nag
-	 * @description: This is the action that allows the user to dismiss the banner it basically sets a tag to their user meta data
+	 *
+	 * This is the action that allows the user to dismiss the banner it basically sets a tag to their user meta data
 	 */
 	public function give_addon_notice_ignore() {
 
@@ -214,4 +231,3 @@ class Give_Addon_Activation_Banner {
 	}
 
 }
-

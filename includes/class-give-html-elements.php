@@ -43,7 +43,8 @@ class Give_HTML_Elements {
 			'selected'    => 0,
 			'chosen'      => false,
 			'number'      => 30,
-			'placeholder' => sprintf( __( 'Select a %s', 'give' ), give_get_forms_label_singular() )
+			/* translators: %s: form singular label */
+			'placeholder' => sprintf( esc_html__( 'Select a %s', 'give' ), give_get_forms_label_singular() )
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -58,12 +59,16 @@ class Give_HTML_Elements {
 		$options = array();
 
 		if ( $forms ) {
-			$options[0] = sprintf( __( 'Select a %s', 'give' ), give_get_forms_label_singular() );
+			$options[0] = sprintf(
+				/* translators: %s: form singular label */
+				esc_html__( 'Select a %s', 'give' ),
+				give_get_forms_label_singular()
+			);
 			foreach ( $forms as $form ) {
 				$options[ absint( $form->ID ) ] = esc_html( $form->post_title );
 			}
 		} else {
-			$options[0] = __( 'No Give Forms Found', 'give' );
+			$options[0] = esc_html__( 'No Give Forms Found', 'give' );
 		}
 
 		// This ensures that any selected forms are included in the drop down
@@ -114,7 +119,7 @@ class Give_HTML_Elements {
 			'multiple'    => false,
 			'selected'    => 0,
 			'chosen'      => true,
-			'placeholder' => __( 'Select a Donor', 'give' ),
+			'placeholder' => esc_attr__( 'Select a Donor', 'give' ),
 			'number'      => 30
 		);
 
@@ -127,12 +132,12 @@ class Give_HTML_Elements {
 		$options = array();
 
 		if ( $customers ) {
-			$options[0] = __( 'No donor attached', 'give' );
+			$options[0] = esc_html__( 'No donor attached', 'give' );
 			foreach ( $customers as $customer ) {
 				$options[ absint( $customer->id ) ] = esc_html( $customer->name . ' (' . $customer->email . ')' );
 			}
 		} else {
-			$options[0] = __( 'No donors found', 'give' );
+			$options[0] = esc_html__( 'No donors found', 'give' );
 		}
 
 		if ( ! empty( $args['selected'] ) ) {
@@ -192,7 +197,7 @@ class Give_HTML_Elements {
 			'name'             => $name,
 			'selected'         => $selected,
 			'options'          => $options,
-			'show_option_all'  => __( 'All Categories', 'give' ),
+			'show_option_all'  => esc_html__( 'All Categories', 'give' ),
 			'show_option_none' => false
 		) );
 
@@ -271,6 +276,7 @@ class Give_HTML_Elements {
 	/**
 	 * Renders an HTML Dropdown
 	 *
+	 * @access public
 	 * @since 1.0
 	 *
 	 * @param array $args
@@ -287,8 +293,8 @@ class Give_HTML_Elements {
 			'chosen'           => false,
 			'placeholder'      => null,
 			'multiple'         => false,
-			'show_option_all'  => _x( 'All', 'all dropdown items', 'give' ),
-			'show_option_none' => _x( 'None', 'no dropdown items', 'give' )
+			'show_option_all'  => esc_html__( 'All', 'give' ),
+			'show_option_none' => esc_html__( 'None', 'give' )
 		);
 
 		$args = wp_parse_args( $args, $defaults );
@@ -352,7 +358,8 @@ class Give_HTML_Elements {
 	/**
 	 * Renders an HTML Checkbox
 	 *
-	 * @since 1.0
+	 * @access public
+	 * @since  1.0
 	 *
 	 * @param array $args
 	 *
@@ -386,14 +393,15 @@ class Give_HTML_Elements {
 	/**
 	 * Renders an HTML Text field
 	 *
-	 * @since 1.0
+	 * @access public
+	 * @since  1.0
 	 *
 	 * @param array $args
 	 *
 	 * @return string Text field
 	 */
 	public function text( $args = array() ) {
-		// Backwards compatabliity
+		// Backwards compatibility
 		if ( func_num_args() > 1 ) {
 			$args = func_get_args();
 
@@ -447,7 +455,8 @@ class Give_HTML_Elements {
 	/**
 	 * Renders a date picker
 	 *
-	 * @since 1.5
+	 * @access public
+	 * @since  1.5
 	 *
 	 * @param array $args Arguments for the text field
 	 *
@@ -468,7 +477,8 @@ class Give_HTML_Elements {
 	/**
 	 * Renders an HTML textarea
 	 *
-	 * @since 1.0
+	 * @access public
+	 * @since  1.0
 	 *
 	 * @param array $args Arguments for the textarea
 	 *
@@ -509,7 +519,8 @@ class Give_HTML_Elements {
 	/**
 	 * Renders an ajax user search field
 	 *
-	 * @since 1.0
+	 * @access public
+	 * @since  1.0
 	 *
 	 * @param array $args
 	 *
@@ -520,7 +531,7 @@ class Give_HTML_Elements {
 		$defaults = array(
 			'name'         => 'user_id',
 			'value'        => null,
-			'placeholder'  => __( 'Enter username', 'give' ),
+			'placeholder'  => esc_attr__( 'Enter username', 'give' ),
 			'label'        => null,
 			'desc'         => null,
 			'class'        => '',
@@ -535,7 +546,7 @@ class Give_HTML_Elements {
 
 		$output = '<span class="give_user_search_wrap">';
 		$output .= $this->text( $args );
-		$output .= '<span class="give_user_search_results hidden"><a class="give-ajax-user-cancel" title="' . __( 'Cancel', 'give' ) . '" aria-label="' . __( 'Cancel', 'give' ) . '" href="#">x</a><span></span></span>';
+		$output .= '<span class="give_user_search_results hidden"><a class="give-ajax-user-cancel" title="' . esc_attr__( 'Cancel', 'give' ) . '" aria-label="' . esc_attr__( 'Cancel', 'give' ) . '" href="#">x</a><span></span></span>';
 		$output .= '</span>';
 
 		return $output;
