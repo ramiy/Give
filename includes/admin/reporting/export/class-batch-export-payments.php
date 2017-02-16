@@ -7,7 +7,7 @@
  * @package     Give
  * @subpackage  Admin/Reports
  * @copyright   Copyright (c) 2016, WordImpress
- * @license     http://opensource.org/licenses/gpl-2.0.php GNU Public License
+ * @license     https://opensource.org/licenses/gpl-license GNU Public License
  * @since       1.5
  */
 
@@ -44,8 +44,8 @@ class Give_Batch_Payments_Export extends Give_Batch_Export {
 			'email'     => esc_html__( 'Email', 'give' ),
 			'first'     => esc_html__( 'First Name', 'give' ),
 			'last'      => esc_html__( 'Last Name', 'give' ),
-			'address1'  => esc_html__( 'Address', 'give' ),
-			'address2'  => esc_html__( 'Address (Line 2)', 'give' ),
+			'address1'  => esc_html__( 'Address 1', 'give' ),
+			'address2'  => esc_html__( 'Address 2', 'give' ),
 			'city'      => esc_html__( 'City', 'give' ),
 			'state'     => esc_html__( 'State', 'give' ),
 			'country'   => esc_html__( 'Country', 'give' ),
@@ -55,7 +55,7 @@ class Give_Batch_Payments_Export extends Give_Batch_Export {
 			'amount'    => esc_html__( 'Amount', 'give' ) . ' (' . html_entity_decode( give_currency_filter( '' ) ) . ')',
 			'gateway'   => esc_html__( 'Payment Method', 'give' ),
 			'trans_id'  => esc_html__( 'Transaction ID', 'give' ),
-			'key'       => esc_html__( 'Purchase Key', 'give' ),
+			'key'       => esc_html__( 'Key', 'give' ),
 			'date'      => esc_html__( 'Date', 'give' ),
 			'user'      => esc_html__( 'User', 'give' ),
 			'status'    => esc_html__( 'Status', 'give' )
@@ -72,7 +72,7 @@ class Give_Batch_Payments_Export extends Give_Batch_Export {
 	 * Get the Export Data.
 	 *
 	 * @access public
-	 * @since 1.5
+	 * @since  1.5
 	 * @global object $wpdb Used to query the database using the WordPress database API.
 	 * @return array $data The data for the CSV file.
 	 */
@@ -99,7 +99,41 @@ class Give_Batch_Payments_Export extends Give_Batch_Export {
 
 		}
 
-		//echo json_encode($args ); exit;
+		// Add category or tag to payment query if any.
+		if ( ! empty( $this->categories ) || ! empty( $this->tags ) ) {
+			$form_args = array(
+				'post_type'      => 'give_forms',
+				'post_status'    => 'publish',
+				'posts_per_page' => - 1,
+				'fields'         => 'ids',
+				'tax_query'      => array(
+					'relation' => 'AND',
+				),
+			);
+
+
+			if ( ! empty( $this->categories ) ) {
+				$form_args['tax_query'][] = array(
+					'taxonomy' => 'give_forms_category',
+					'terms'    => $this->categories,
+				);
+			}
+
+			if ( ! empty( $this->tags ) ) {
+				$form_args['tax_query'][] = array(
+					'taxonomy' => 'give_forms_tag',
+					'terms'    => $this->tags,
+				);
+			}
+
+			$forms = new WP_Query( $form_args );
+
+			if ( empty( $forms->posts ) ) {
+				return array();
+			}
+
+			$args['give_forms'] = $forms->posts;
+		}
 
 		$payments = give_get_payments( $args );
 
@@ -146,13 +180,13 @@ class Give_Batch_Payments_Export extends Give_Batch_Export {
 			}
 
 			$data = apply_filters( 'give_export_get_data', $data );
-			$data = apply_filters( 'give_export_get_data_' . $this->export_type, $data );
+			$data = apply_filters( "give_export_get_data_{$this->export_type}", $data );
 
 			return $data;
 
 		}
 
-		return false;
+		return array();
 
 	}
 
@@ -201,8 +235,10 @@ class Give_Batch_Payments_Export extends Give_Batch_Export {
 	 * @param array $request The Form Data passed into the batch processing.
 	 */
 	public function set_properties( $request ) {
-		$this->start  = isset( $request['start'] ) ? sanitize_text_field( $request['start'] ) : '';
-		$this->end    = isset( $request['end'] ) ? sanitize_text_field( $request['end'] ) : '';
-		$this->status = isset( $request['status'] ) ? sanitize_text_field( $request['status'] ) : 'complete';
+		$this->start      = isset( $request['start'] ) ? sanitize_text_field( $request['start'] ) : '';
+		$this->end        = isset( $request['end'] ) ? sanitize_text_field( $request['end'] ) : '';
+		$this->status     = isset( $request['status'] ) ? sanitize_text_field( $request['status'] ) : 'complete';
+		$this->categories = isset( $request['give_forms_categories'] ) ? give_clean( $request['give_forms_categories'] ) : array();
+		$this->tags       = isset( $request['give_forms_tags'] ) ? give_clean( $request['give_forms_tags'] ) : array();
 	}
 }

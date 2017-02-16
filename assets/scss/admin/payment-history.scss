@@ -42,7 +42,7 @@
 
 #give-payments-filter {
   ul.subsubsub {
-    margin: 0 0 12px;
+    margin-bottom: 12px;
   }
   .tablenav.top {
     float: none;
@@ -101,7 +101,9 @@ tr.status-refunded td {
     display: inline-block;
     width: 12px;
     height: 12px;
-    margin: 0 4px;
+    position: relative;
+    top: 1px;
+    margin: 0;
     padding: 0;
     border-radius: 50%;
     background: #888;
@@ -154,6 +156,7 @@ tr.status-refunded td {
 
   .give-payment-id {
     @include give-label();
+    font-weight: normal;
     @extend .give-item-label-gray;
   }
 
@@ -224,11 +227,6 @@ Responsiveness
 
 .give-admin-box .right {
   float: right;
-}
-
-.rtl .give-admin-box .right {
-  float: left;
-  margin-left: 10px;
 }
 
 #give-order-update .inside,
@@ -329,10 +327,6 @@ Responsiveness
   font-weight: 600;
 }
 
-#give-donation-overview .inside {
-  padding: 12px;
-}
-
 input.give-price-field {
   width: 80px;
   padding: 3px 5px;
@@ -413,18 +407,11 @@ input.give-price-field {
   }
 }
 
-
 //------------------------------------------
 //Donation Details
 //------------------------------------------
-
-#give-customer-details {
-
-  .inside {
-    padding-top: 15px;
-    padding-bottom: 15px;
-  }
-
+#give-donor-details .inside, #give-donation-overview .inside {
+  margin-top: 0;
 }
 
 .give_forms_page_give-payment-history #give-dashboard-widgets-wrap #side-sortables {

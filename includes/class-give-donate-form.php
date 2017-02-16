@@ -5,26 +5,34 @@
  * @package     Give
  * @subpackage  Classes/Give_Donate_Form
  * @copyright   Copyright (c) 2015, WordImpress
- * @license     http://opensource.org/licenses/gpl-2.0.php GNU Public License
+ * @license     https://opensource.org/licenses/gpl-license GNU Public License
  * @since       1.0
  */
 
-// Exit if accessed directly
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Give_Donate_Form Class
+ * Give_Donate_Form Class.
  *
  * This class handles donation forms.
  *
  * @since 1.0
+ *
+ * @property $price
+ * @property $minimum_price
+ * @property $prices
+ * @property $goal
+ * @property $sales
+ * @property $earnings
+ * @property $post_type
  */
 class Give_Donate_Form {
 
 	/**
-	 * The donation ID
+	 * The donation ID.
 	 *
 	 * @since  1.0
 	 * @access public
@@ -34,7 +42,7 @@ class Give_Donate_Form {
 	public $ID = 0;
 
 	/**
-	 * The donation price
+	 * The donation price.
 	 *
 	 * @since  1.0
 	 * @access private
@@ -44,7 +52,7 @@ class Give_Donate_Form {
 	private $price;
 
 	/**
-	 * The minimum donation price
+	 * The minimum donation price.
 	 *
 	 * @since  1.3.6
 	 * @access private
@@ -54,17 +62,7 @@ class Give_Donate_Form {
 	private $minimum_price;
 
 	/**
-	 * The donation goal
-	 *
-	 * @since  1.0
-	 * @access private
-	 *
-	 * @var    float
-	 */
-	private $goal;
-
-	/**
-	 * The donation prices, if Price Levels are enabled
+	 * The donation prices, if Price Levels are enabled.
 	 *
 	 * @since  1.0
 	 * @access private
@@ -74,7 +72,17 @@ class Give_Donate_Form {
 	private $prices;
 
 	/**
-	 * The form's sale count
+	 * The donation goal.
+	 *
+	 * @since  1.0
+	 * @access private
+	 *
+	 * @var    float
+	 */
+	private $goal;
+
+	/**
+	 * The form's sale count.
 	 *
 	 * @since  1.0
 	 * @access private
@@ -328,8 +336,6 @@ class Give_Donate_Form {
 	 *
 	 * @param  bool  $_id   Post id. Default is false.
 	 * @param  array $_args Arguments passed.
-	 *
-	 * @return void
 	 */
 	public function __construct( $_id = false, $_args = array() ) {
 
@@ -381,13 +387,12 @@ class Give_Donate_Form {
 	/**
 	 * Magic __get function to dispatch a call to retrieve a private property
 	 *
-	 * @since 1.0
+	 * @since  1.0
 	 * @access public
 	 *
 	 * @param  string $key
 	 *
 	 * @return mixed
-	 * @throws Exception
 	 */
 	public function __get( $key ) {
 
@@ -412,7 +417,7 @@ class Give_Donate_Form {
 	 *
 	 * @param  array $data Array of attributes for a donation form.
 	 *
-	 * @return mixed       False if data isn't passed and class not instantiated for creation, or New Form ID.
+	 * @return bool|int    False if data isn't passed and class not instantiated for creation, or New Form ID.
 	 */
 	public function create( $data = array() ) {
 
@@ -423,7 +428,7 @@ class Give_Donate_Form {
 		$defaults = array(
 			'post_type'   => 'give_forms',
 			'post_status' => 'draft',
-			'post_title'  => esc_html__( 'New Donation Form', 'give' )
+			'post_title'  => __( 'New Donation Form', 'give' ),
 		);
 
 		$args = wp_parse_args( $data, $defaults );
@@ -527,7 +532,7 @@ class Give_Donate_Form {
 			$allow_custom_amount = get_post_meta( $this->ID, '_give_custom_amount', true );
 			$this->minimum_price = get_post_meta( $this->ID, '_give_custom_amount_minimum', true );
 
-			if ( $allow_custom_amount != 'no' && $this->minimum_price ) {
+			if ( give_is_setting_enabled( $allow_custom_amount ) && $this->minimum_price ) {
 
 				$this->minimum_price = give_sanitize_amount( $this->minimum_price );
 
@@ -563,8 +568,8 @@ class Give_Donate_Form {
 		 *
 		 * @since 1.0
 		 *
-		 * @param array $prices The array of mulit-level prices.
-		 * @param int|string The ID of the form.
+		 * @param array      $prices The array of mulit-level prices.
+		 * @param int|string $ID     The ID of the form.
 		 */
 		return apply_filters( 'give_get_donation_levels', $this->prices, $this->ID );
 
@@ -610,7 +615,7 @@ class Give_Donate_Form {
 	 */
 	public function is_single_price_mode() {
 
-		$option = get_post_meta( $this->ID, '_give_price_options_mode', true );
+		$option = get_post_meta( $this->ID, '_give_price_option', true );
 		$ret    = 0;
 
 		if ( empty( $option ) || $option === 'set' ) {
@@ -622,8 +627,8 @@ class Give_Donate_Form {
 		 *
 		 * @since 1.0
 		 *
-		 * @param bool $ret Is donation form in single price mode?
-		 * @param int|string The ID of the donation form.
+		 * @param bool       $ret Is donation form in single price mode?
+		 * @param int|string $ID The ID of the donation form.
 		 */
 		return (bool) apply_filters( 'give_single_price_option_mode', $ret, $this->ID );
 
@@ -642,7 +647,7 @@ class Give_Donate_Form {
 		$option = get_post_meta( $this->ID, '_give_custom_amount', true );
 		$ret    = 0;
 
-		if ( $option === 'yes' ) {
+		if ( give_is_setting_enabled( $option ) ) {
 			$ret = 1;
 		}
 
@@ -651,8 +656,8 @@ class Give_Donate_Form {
 		 *
 		 * @since 1.6
 		 *
-		 * @param bool $ret Is donation form in custom price mode?
-		 * @param int|string The ID of the donation form.
+		 * @param bool       $ret Is donation form in custom price mode?
+		 * @param int|string $ID  The ID of the donation form.
 		 */
 		return (bool) apply_filters( 'give_custom_price_option_mode', $ret, $this->ID );
 
@@ -680,8 +685,8 @@ class Give_Donate_Form {
 		/**
 		 * Filter: Override whether the donation form has variables prices.
 		 *
-		 * @param bool $ret Does donation form have variable prices?
-		 * @param int|string The ID of the donation form.
+		 * @param bool       $ret Does donation form have variable prices?
+		 * @param int|string $ID  The ID of the donation form.
 		 */
 		return (bool) apply_filters( 'give_has_variable_prices', $ret, $this->ID );
 
@@ -733,7 +738,7 @@ class Give_Donate_Form {
 			'give-form',
 			'give-form-' . $this->ID,
 			'give-form-type-' . $this->get_type(),
-			$float_labels_option
+			$float_labels_option,
 		), $this->ID, $args );
 
 		// Remove empty class names.
@@ -760,9 +765,14 @@ class Give_Donate_Form {
 			? $args['display_style']
 			: get_post_meta( $this->ID, '_give_payment_display', true );
 
+		// If admin want to show only button for form then user inbuilt modal functionality.
+		if( 'button' === $display_option ) {
+			$display_option = 'modal give-display-button-only';
+		}
+
 		$form_wrap_classes_array = apply_filters( 'give_form_wrap_classes', array(
 			'give-form-wrap',
-			'give-display-' . $display_option
+			'give-display-' . $display_option,
 		), $this->ID, $args );
 
 
@@ -770,19 +780,18 @@ class Give_Donate_Form {
 
 	}
 
-    /**
-     * Get if form type set or not.
-     *
-     * @since  1.6
-	 * @access public
-     *
-	 * @return bool
+	/**
+	 * Get if form type set or not.
 	 *
+	 * @since  1.6
+	 * @access public
+	 *
+	 * @return bool
+	 */
 	public function is_set_type_donation_form() {
 		$form_type = $this->get_type();
 
 		return ( 'set' === $form_type ? true : false );
-
 	}
 
 	/**
@@ -925,7 +934,7 @@ class Give_Donate_Form {
 	 * @since  1.0
 	 * @access public
 	 *
-	 * @param  int    $amount Amount of donation. Default is 0.
+	 * @param  int $amount Amount of donation. Default is 0.
 	 *
 	 * @return float|false
 	 */
@@ -952,8 +961,8 @@ class Give_Donate_Form {
 	 * @since  1.0
 	 * @access public
 	 *
-	 * @param  int    $amount Amount of donation.
-	 * 
+	 * @param  int $amount Amount of donation.
+	 *
 	 * @return float|false
 	 */
 	public function decrease_earnings( $amount ) {
@@ -985,7 +994,7 @@ class Give_Donate_Form {
 	 * @since  1.0
 	 * @access public
 	 *
-	 * @param  int    $price_id Price ID. Default is false.
+	 * @param  int $price_id Price ID. Default is false.
 	 *
 	 * @return bool
 	 */
@@ -1022,11 +1031,23 @@ class Give_Donate_Form {
 	 * @return bool
 	 */
 	public function is_close_donation_form() {
-		return (
-			       'yes' === get_post_meta( $this->ID, '_give_goal_option', true ) )
-		       && ( 'yes' === get_post_meta( $this->ID, '_give_close_form_when_goal_achieved', true ) )
-		       && ( $this->get_goal() <= $this->get_earnings()
-		       );
+
+		/**
+		 * Filter the close form result.
+		 *
+		 * @since 1.8
+		 */
+		$is_close_form = apply_filters(
+			'give_is_close_donation_form',
+			(
+			give_is_setting_enabled( get_post_meta( $this->ID, '_give_goal_option', true ) ) )
+			&& give_is_setting_enabled( get_post_meta( $this->ID, '_give_close_form_when_goal_achieved', true ) )
+			&& ( $this->get_goal() <= $this->get_earnings()
+			),
+			$this->ID
+		);
+
+		return $is_close_form;
 	}
 
 	/**

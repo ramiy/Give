@@ -5,12 +5,12 @@
  * @package     Give
  * @subpackage  Templates/Global
  * @copyright   Copyright (c) 2016, WordImpress
- * @license     http://opensource.org/licenses/gpl-2.0.php GNU Public License
+ * @license     https://opensource.org/licenses/gpl-license GNU Public License
  * @since       1.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly
+	exit; // Exit if accessed directly.
 }
 
 $template = strtolower( get_option( 'template' ) );
@@ -30,6 +30,9 @@ switch ( $template ) {
 		break;
 	case 'twentyfifteen' :
 		echo '<div id="primary" role="main" class="content-area twentyfifteen give-wrap"><div id="main" class="site-main t15give">';
+		break;
+	case 'twentyseventeen' :
+		echo '<div class="wrap give-wrap">';
 		break;
 	case 'flatsome' :
 		echo '<div id="container" class="row product-page give-wrap"><div id="content" role="main">';
